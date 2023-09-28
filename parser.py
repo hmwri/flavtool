@@ -23,12 +23,13 @@ class Parser :
                 else :
                     self.video_track = box
 
-
         return self.parsed_box
 
     def write(self, path:str):
         with open(path, "wb") as f:
             self.parsed_box.write(f)
+
+
 
 
 

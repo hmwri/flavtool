@@ -1,6 +1,7 @@
 from typing import BinaryIO
 from datetime import datetime, timedelta
 from boxs.leaf import *
+from boxs.box import Box
 
 containerNames = ["moov", "trak", "edts", "minf", "stbl", "acv1", "dinf", "mdia"]
 
@@ -42,8 +43,17 @@ class ContainerBox(Box):
                 box = VmhdBox(child_box_type)
             elif child_box_type == "smhd":
                 box = SmhdBox(child_box_type)
+            elif child_box_type == "dref":
+                box = DrefBox(child_box_type)
+            elif child_box_type == "stsd":
+                box = StsdBox(child_box_type)
+            elif child_box_type == "stts":
+                box = SttsBox(child_box_type)
+            elif child_box_type == "stsc":
+                box = StscBox(child_box_type)
             else:
                 box = UnknownBox(child_box_type)
+            box.parent = self
             box.parse(f, child_body_size)
 
             self.children.append(box)
@@ -64,19 +74,9 @@ class ContainerBox(Box):
         for child in self.children:
             child.write(f)
 
-    @staticmethod
-    def get_type_and_size(f: BinaryIO):
-        box_size: int = int.from_bytes(f.read(4), byteorder='big')
-        box_type: str = f.read(4).decode("ascii")
-        body_size: int = box_size - 8
-        extended = box_size == 1
-        if extended:
-            print("big")
-            box_size = int.from_bytes(f.read(8), byteorder="big")
-            body_size = box_size - 16
-        return box_type, box_size, body_size, extended
 
-    def print(self, depth):
+
+    def print(self, depth=0):
         for d in range(depth):
             print("\t", end="")
         print(f"Container -  {self.box_type}")

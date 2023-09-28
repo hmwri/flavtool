@@ -1,13 +1,11 @@
 from typing import BinaryIO
 
 
-class Box:
-    def __init__(self, box_type):
-        self.box_type = box_type
 
+class Mp4Component:
+    def __init__(self):
+        pass
 
-    def parse(self, f: BinaryIO, body_size: int):
-        raise NotImplemented
 
     def print(self, depth=0):
         raise NotImplemented
@@ -25,6 +23,7 @@ class Box:
         for d in range(depth):
             print("\t", end="")
         print(word)
+
 
 
 
@@ -87,6 +86,51 @@ class Box:
     def write_ascii(self, f: BinaryIO, s: str):
         f.write(s.encode("ascii"))
 
+
+
+    def get_size(self) -> int:
+        raise NotImplementedError
+
+
+class Box(Mp4Component):
+
+    def __init__(self, box_type):
+        super().__init__()
+        self.box_type = box_type
+        self.parent:Mp4Component= None
+
+
+    def parse(self, f: BinaryIO, body_size: int):
+        raise NotImplemented
+
+    def print(self, depth=0):
+        raise NotImplemented
+
+    def write(self, f:BinaryIO):
+        raise NotImplemented
+
+    def get_size(self) -> int:
+        raise NotImplementedError
+
+    @staticmethod
+    def get_type_and_size(f: BinaryIO):
+        box_size: int = int.from_bytes(f.read(4), byteorder='big')
+        box_type: str = f.read(4).decode("ascii")
+        body_size: int = box_size - 8
+        extended = box_size == 1
+        if extended:
+            print("big")
+            box_size = int.from_bytes(f.read(8), byteorder="big")
+            body_size = box_size - 16
+        return box_type, box_size, body_size, extended
+
+    def get_overall_size(self, body_size):
+        if body_size >= 4294967296 - 8:
+            size = body_size + 16
+        else:
+            size = body_size + 8
+        return size
+
     def write_type_and_size(self, f: BinaryIO, box_type: str, size: int, force_extended=False):
         if size >= 4294967296 or force_extended:
             self.write_int(f, 1)
@@ -96,12 +140,4 @@ class Box:
             self.write_int(f, size)
             self.write_ascii(f, box_type)
 
-    def get_overall_size(self, body_size):
-        if body_size >= 4294967296 - 8:
-            size = body_size + 16
-        else:
-            size = body_size + 8
-        return size
 
-    def get_size(self) -> int:
-        raise NotImplementedError
