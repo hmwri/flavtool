@@ -670,6 +670,7 @@ class TimeToSample(Mp4Component):
     def get_size(self) -> int:
         return 8
 
+
 class StscBox(LeafBox):
     def __init__(self, box_type: str):
         super().__init__(box_type)
@@ -725,7 +726,9 @@ class SampleToChunk(Mp4Component):
         return self
 
     def print(self, depth=0):
-        self.print_with_indent(f" - first_chunk: {self.first_chunk}, samples_per_chunk: {self.samples_per_chunk}, sample_description_id:{self.sample_description_id}", depth)
+        self.print_with_indent(
+            f" - first_chunk: {self.first_chunk}, samples_per_chunk: {self.samples_per_chunk}, sample_description_id:{self.sample_description_id}",
+            depth)
 
     def write(self, f: BinaryIO):
         self.write_int(f, self.first_chunk)
@@ -735,4 +738,79 @@ class SampleToChunk(Mp4Component):
     def get_size(self) -> int:
         return 12
 
+
+class StszBox(LeafBox):
+    def __init__(self, box_type: str):
+        super().__init__(box_type)
+        self.version: bytes = b''
+        self.flags: bytes = b''
+        self.sample_size: int = 0
+        self.number_of_entries: int = 0
+        self.sample_size_table: list[int] = []
+
+    def parse(self, f: BinaryIO, body_size: int):
+        self.version = f.read(1)
+        self.flags = f.read(3)
+        self.sample_size = self.read_int(f, 4)
+        self.number_of_entries = self.read_int(f, 4)
+        for i in range(self.number_of_entries):
+            self.sample_size_table.append(self.read_int(f, 4))
+        return self
+
+    def print(self, depth=0):
+        self.print_with_indent("stsz", depth)
+        depth += 1  # Increase the depth for nested printing
+        self.print_with_indent(f" - version: {self.version.hex()}", depth)
+        self.print_with_indent(f" - flags: {self.flags.hex()}", depth)
+        self.print_with_indent(f" - sample size: {self.sample_size}", depth)
+        self.print_with_indent(f" - number of entries: {self.number_of_entries}", depth)
+        self.print_with_indent(f" - sample to size data:{self.sample_size_table}", depth)
+
+    def write(self, f: BinaryIO):
+        self.write_type_and_size(f, "stsz", self.get_size())
+        f.write(self.version)
+        f.write(self.flags)
+        self.write_int(f, self.sample_size)
+        self.write_int(f, self.number_of_entries)
+        for sample_size in self.sample_size_table:
+            self.write_int(f, sample_size)
+
+    def get_size(self) -> int:
+        return self.get_overall_size(1 + 3 + 4 + 4 + 4 * self.number_of_entries)
+
+
+class StcoBox(LeafBox):
+    def __init__(self, box_type: str):
+        super().__init__(box_type)
+        self.version: bytes = b''
+        self.flags: bytes = b''
+        self.number_of_entries: int = 0
+        self.chunk_to_offset_table: list[int] = []
+
+    def parse(self, f: BinaryIO, body_size: int):
+        self.version = f.read(1)
+        self.flags = f.read(3)
+        self.number_of_entries = self.read_int(f, 4)
+        for i in range(self.number_of_entries):
+            self.chunk_to_offset_table.append(self.read_int(f, 4))
+        return self
+
+    def print(self, depth=0):
+        self.print_with_indent("stco", depth)
+        depth += 1  # Increase the depth for nested printing
+        self.print_with_indent(f" - version: {self.version.hex()}", depth)
+        self.print_with_indent(f" - flags: {self.flags.hex()}", depth)
+        self.print_with_indent(f" - number of entries: {self.number_of_entries}", depth)
+        self.print_with_indent(f" - chunk to offset data:{self.chunk_to_offset_table}", depth)
+
+    def write(self, f: BinaryIO):
+        self.write_type_and_size(f, "stco", self.get_size())
+        f.write(self.version)
+        f.write(self.flags)
+        self.write_int(f, self.number_of_entries)
+        for sample_size in self.chunk_to_offset_table:
+            self.write_int(f, sample_size)
+
+    def get_size(self) -> int:
+        return self.get_overall_size(1 + 3 + 4  + 4 * self.number_of_entries)
 

@@ -51,6 +51,10 @@ class ContainerBox(Box):
                 box = SttsBox(child_box_type)
             elif child_box_type == "stsc":
                 box = StscBox(child_box_type)
+            elif child_box_type == "stsz":
+                box = StszBox(child_box_type)
+            elif child_box_type == "stco":
+                box = StcoBox(child_box_type)
             else:
                 box = UnknownBox(child_box_type)
             box.parent = self
