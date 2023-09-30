@@ -17,6 +17,7 @@ class ContainerBox(Box):
                 return child
 
 
+
     def parse(self, f: BinaryIO, body_size: int):
         begin_byte = f.tell()
 
@@ -30,7 +31,7 @@ class ContainerBox(Box):
             elif child_box_type == "free":
                 box = FreeBox(child_box_type)
             elif child_box_type == "mdat":
-                box = MdatBox(child_box_type,is_extended)
+                box = MdatBox(child_box_type,is_extended, f.tell())
             elif child_box_type == "mvhd":
                 box = MvhdBox(child_box_type)
             elif child_box_type == "tkhd":
@@ -63,6 +64,19 @@ class ContainerBox(Box):
             self.children.append(box)
 
         return self
+
+    def get_mdat_offset(self) -> (MdatBox, int):
+        size = 0
+        for child in self.children:
+            if child.box_type == "mdat":
+                child : MdatBox
+                if child.is_size_extended:
+                    size += 16
+                else:
+                    size += 8
+                return child, size
+            size += child.get_size()
+
 
     def get_size(self) -> int:
         size = 0

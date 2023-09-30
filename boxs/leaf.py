@@ -101,17 +101,19 @@ class FreeBox(LeafBox):
 
 
 class MdatBox(LeafBox):
-    def __init__(self, box_type: str, is_extended: bool):
+    def __init__(self, box_type: str, is_extended: bool, begin_point:int):
         super().__init__(box_type)
         self.body: bytes = b''
         self.is_size_extended = is_extended
+        self.begin_point = begin_point
 
     def parse(self, f: BinaryIO, body_size: int):
         self.body = f.read(body_size)
         return self
 
     def print(self, depth=0):
-        self.print_with_indent("free", depth)
+        self.print_with_indent("mdat", depth)
+        self.print_with_indent(f" - begin {self.begin_point}", depth)
         self.print_with_indent(f" - body {self.body[:10]}", depth)
 
     def write(self, f: BinaryIO):
@@ -809,6 +811,7 @@ class StcoBox(LeafBox):
         f.write(self.flags)
         self.write_int(f, self.number_of_entries)
         for sample_size in self.chunk_to_offset_table:
+            print(sample_size)
             self.write_int(f, sample_size)
 
     def get_size(self) -> int:
