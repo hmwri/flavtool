@@ -5,7 +5,7 @@ from boxs.leaf import *
 import numpy as np
 
 
-class Evaluator:
+class Composer:
     def __init__(self, parsed_box: ContainerBox):
         self.parsed = parsed_box
         box: ContainerBox
@@ -22,19 +22,22 @@ class Evaluator:
             self.video_sample_table,
             "video"
         )
+        self.movie_header: MvhdBox = self.parsed["moov"]["mvhd"]
         self.sound_sample_table = self.sound_track.media.media_info.sample_table
         self.sound_media_data = MediaDataComponent(
             self.parsed["mdat"],
             self.sound_sample_table,
             "sound"
         )
-        self.mdat : MdatBox = self.parsed["mdat"]
+        self.taste_track = None
+        self.scent_track = None
+        self.mdat: MdatBox = self.parsed["mdat"]
 
     def compose(self):
         # time_scale
         video_sps = self.video_track.media.header.time_scale
         sound_sps = self.sound_track.media.header.time_scale
-        chunks:list[ChunkData] = []
+        chunks: list[ChunkData] = []
         video_chunks = self.video_media_data.data
         sound_chunks = self.sound_media_data.data
         video_chunk_offsets = []
@@ -46,13 +49,14 @@ class Evaluator:
             video_chunk_offsets.append(offset)
             chunks.append(video_chunk)
             offset += video_chunk.get_size()
-            while sound_i < len(sound_chunks) and sound_chunks[sound_i].begin_time / sound_sps <= video_chunk.end_time / video_sps:
+            while sound_i < len(sound_chunks) and sound_chunks[
+                sound_i].begin_time / sound_sps <= video_chunk.end_time / video_sps:
                 sound_chunk_offsets.append(offset)
                 sound_chunk = sound_chunks[sound_i]
                 chunks.append(sound_chunk)
                 offset += sound_chunk.get_size()
                 sound_i += 1
-        while sound_i < len(sound_chunks) :
+        while sound_i < len(sound_chunks):
             sound_chunk_offsets.append(offset)
             chunks.append(sound_chunks[sound_i])
             offset += sound_chunks[sound_i].get_size()
@@ -72,13 +76,102 @@ class Evaluator:
         self.sound_sample_table.chunk_offset.chunk_to_offset_table = [sco + mdat_offset for sco in sound_chunk_offsets]
         print(self.sound_sample_table.chunk_offset)
 
-    def create_dummy_stco(self, chunks_len:int, stco:StcoBox = None):
+    def create_dummy_stco(self, chunks_len: int, stco: StcoBox = None):
         if stco is None:
             return
         stco.number_of_entries = chunks_len
         stco.chunk_to_offset_table = []
 
+    def add_taste_track(self, data: np.ndarray, fps: float, codec: str):
+        now = (datetime.now() - datetime(1904, 1, 1)).total_seconds()
 
+        sample_table = ContainerBox(
+            box_type="stbl",
+            children=[
+                StsdBox(
+                    number_of_entries=1,
+                    sample_description_table=[
+                        SampleDescription(
+
+                        )
+                    ]
+                )
+            ]
+        )
+
+        track_box = ContainerBox(
+            box_type="trak",
+            children=[
+                TkhdBox(
+                    box_type="tkhd",
+                    creation_time=int(now),
+                    modification_time=int(now),
+                    duration=0,
+                    layer=0,
+                    volume=1.0
+                ),
+                ContainerBox(
+                    box_type="edts",
+                    children=[
+                        ElstBox(
+                            box_type="elst",
+                            number_of_entries=1,
+                            edit_list_table=[
+                                EditList(
+                                    track_duration=self.movie_header.duration,
+                                    media_time=0,
+                                    media_rate=1.0
+                                )
+                            ]
+                        )
+                    ]
+                ),
+                ContainerBox(
+                    box_type="mdia",
+                    children=[
+                        MdhdBox(
+                            box_type="mdhd",
+                            creation_time=int(now),
+                            modification_time=int(now),
+                            time_scale=int(fps * 1000),
+                            duration=len(data),
+                            language=10766,
+                        ),
+                        HdlrBox(
+                            box_type="hdlr",
+                            component_type="mhlr",
+                            component_subtype="tast",
+                            component_name="TTTV".encode("ascii")
+                        ),
+                        ContainerBox(
+                            box_type="minf",
+                            children=[
+                                TmhdBox(
+                                    box_type="tmhd",
+                                    balance=0
+                                ),
+                                ContainerBox(
+                                    box_type="dinf",
+                                    children=[
+                                        DrefBox(
+                                            box_type="dref",
+                                            number_of_entries=1,
+                                            data_references=[
+                                                UrlBox(box_type="url")
+                                            ]
+                                        )
+                                    ]
+                                ),
+                                sample_table
+                            ]
+
+                        )
+
+                    ]
+                )
+            ]
+        )
+        pass
 
 
 class EvalComponent:
@@ -156,7 +249,7 @@ class MediaDataComponent(EvalComponent):
                 chunk_inside_offset += sample_size
                 sample_i += 1
 
-            end_time = self.get_time_of_sample(sample_i-1)
+            end_time = self.get_time_of_sample(sample_i - 1)
             self.data.append(ChunkData(samples, self.media_type, begin_time=begin_time, end_time=end_time))
         for d in self.data:
             d.print()
@@ -173,6 +266,7 @@ class MediaDataComponent(EvalComponent):
                 t += td.sample_delta
                 sample_n += 1
 
+
 class SampleData:
     def __init__(self, data: bytes):
         self.data = data
@@ -183,6 +277,7 @@ class SampleData:
     def __len__(self):
         return len(self.data)
 
+
 class ChunkData:
     def __init__(self, samples: list[SampleData], media_type: str, begin_time=0, end_time=0):
         self.samples = samples
@@ -190,13 +285,11 @@ class ChunkData:
         self.begin_time = begin_time
         self.end_time = end_time
 
-
     def get_size(self):
         size = 0
         for sample in self.samples:
             size += len(sample)
         return size
-
 
     def print(self):
         print()

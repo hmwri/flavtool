@@ -101,7 +101,7 @@ class FreeBox(LeafBox):
 
 
 class MdatBox(LeafBox):
-    def __init__(self, box_type: str, is_extended: bool, begin_point:int):
+    def __init__(self, box_type: str, is_extended: bool, begin_point: int):
         super().__init__(box_type)
         self.body: bytes = b''
         self.is_size_extended = is_extended
@@ -203,23 +203,27 @@ class MvhdBox(LeafBox):
 
 class TkhdBox(LeafBox):
 
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00', creation_time: int = 0,
+                 modification_time: int = 0, track_id: int = 0, reserved1: bytes = bytes(4), duration: int = 0,
+                 reserved2: bytes = bytes(8), layer: int = 0, alternative_group: bytes = bytes(2), volume: float = 0.0,
+                 reserved3: bytes = bytes(2), matrix: bytes = bytes(36), track_width: float = 0.0,
+                 track_height: float = 0.0):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.creation_time: int = 0
-        self.modification_time: int = 0
-        self.track_id: int = 0
-        self.reserved1 = b''
-        self.duration: int = 0
-        self.reserved2 = b''
-        self.layer: int = 0
-        self.alternative_group: bytes = b''
-        self.volume: float = 0
-        self.reserved3 = b''
-        self.matrix = b''
-        self.track_width: float = 0
-        self.track_height: float = 0
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.creation_time: int = creation_time
+        self.modification_time: int = modification_time
+        self.track_id: int = track_id
+        self.reserved1 = reserved1
+        self.duration: int = duration
+        self.reserved2 = reserved2
+        self.layer: int = layer
+        self.alternative_group: bytes = alternative_group
+        self.volume: float = volume
+        self.reserved3 = reserved3
+        self.matrix = matrix
+        self.track_width: float = track_width
+        self.track_height: float = track_height
 
     def parse(self, f: BinaryIO, body_size: int):
         self.version = f.read(1)
@@ -256,6 +260,7 @@ class TkhdBox(LeafBox):
         self.print_with_indent(f" - reserved1: {self.reserved1.hex()}", depth)
         self.print_with_indent(f" - duration: {self.duration}", depth)
         self.print_with_indent(f" - reserved2: {self.reserved2.hex()}", depth)
+        self.print_with_indent(f" - layer: {self.layer}", depth)
         self.print_with_indent(f" - alternative_group: {self.alternative_group.hex()}", depth)
         self.print_with_indent(f" - volume: {self.volume}", depth)
         self.print_with_indent(f" - reserved3: {self.reserved3.hex()}", depth)
@@ -287,16 +292,18 @@ class TkhdBox(LeafBox):
 
 
 class MdhdBox(LeafBox):
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00', creation_time: int = 0,
+                 modification_time: int = 0, time_scale: int = 0, duration: int = 0, language: int = 0,
+                 predefines: bytes = bytes(4)):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.creation_time: int = 0
-        self.modification_time: int = 0
-        self.time_scale: int = 0
-        self.duration: int = 0
-        self.language: int = 0
-        self.predefines = b''
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.creation_time: int = creation_time
+        self.modification_time: int = modification_time
+        self.time_scale: int = time_scale
+        self.duration: int = duration
+        self.language: int = language
+        self.predefines = predefines
 
     def parse(self, f: BinaryIO, body_size: int):
         begin = f.tell()
@@ -344,13 +351,14 @@ class MdhdBox(LeafBox):
 
 
 class HdlrBox(LeafBox):
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
+                 component_type: str = "", component_subtype: str = "", component_name: bytes = bytes(4)):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.component_type: str = ""
-        self.component_subtype: str = ""
-        self.component_name: bytes = b''
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.component_type: str = component_type
+        self.component_subtype: str = component_subtype
+        self.component_name: bytes = component_name
 
     def parse(self, f: BinaryIO, body_size: int):
         begin = f.tell()
@@ -451,13 +459,81 @@ class SmhdBox(LeafBox):
         return self.get_overall_size(1 + 3 + 2 * 2)
 
 
-class DrefBox(LeafBox):
-    def __init__(self, box_type: str):
+class TmhdBox(LeafBox):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00', balance: int = 0,
+                 reserved: bytes = bytes(2)):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.number_of_entries: int = 0
-        self.data_references: list[UrlBox] = []
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.balance: int = balance
+        self.reserved: bytes = reserved
+
+    def parse(self, f: BinaryIO, body_size: int):
+        self.version = f.read(1)
+        self.flags = f.read(3)
+        self.balance = self.read_int(f, 2)
+        self.reserved = f.read(2)
+        return self
+
+    def print(self, depth=0):
+        self.print_with_indent("smhd", depth)
+        depth += 1  # Increase the depth for nested printing
+        self.print_with_indent(f" - version: {self.version.hex()}", depth)
+        self.print_with_indent(f" - flags: {self.flags.hex()}", depth)
+        self.print_with_indent(f" - balance: {self.balance}", depth)
+        self.print_with_indent(f" - reserved: {self.reserved}", depth)
+
+    def write(self, f: BinaryIO):
+        self.write_type_and_size(f, "smhd", self.get_size())
+        f.write(self.version)
+        f.write(self.flags)
+        self.write_int(f, self.balance, 2)
+        f.write(self.reserved)
+
+    def get_size(self) -> int:
+        return self.get_overall_size(1 + 3 + 2 * 2)
+
+
+class UrlBox(LeafBox):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00', data: bytes = b''):
+        super().__init__(box_type)
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.data: bytes = data
+
+    def parse(self, f: BinaryIO, body_size: int):
+        self.version = f.read(1)
+        self.flags = f.read(3)
+        self.data = f.read(body_size - 4)
+        return self
+
+    def print(self, depth=0):
+        self.print_with_indent(self.box_type, depth)
+        depth += 1  # Increase the depth for nested printing
+        self.print_with_indent(f" - version: {self.version.hex()}", depth)
+        self.print_with_indent(f" - flags: {self.flags.hex()}", depth)
+        self.print_with_indent(f" - data: {self.data.hex()}", depth)
+
+    def write(self, f: BinaryIO):
+        self.write_type_and_size(f, self.box_type, self.get_size())
+        f.write(self.version)
+        f.write(self.flags)
+        f.write(self.data)
+
+    def get_size(self) -> int:
+        return self.get_overall_size(1 + 3 + len(self.data))
+
+
+class DrefBox(LeafBox):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = '\x00\x00\x00',
+                 number_of_entries: int = 0, data_references=None):
+        super().__init__(box_type)
+        if data_references is None:
+            data_references = []
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.number_of_entries: int = number_of_entries
+        self.data_references: list[UrlBox] = data_references
 
     def parse(self, f: BinaryIO, body_size: int):
         self.version = f.read(1)
@@ -493,43 +569,16 @@ class DrefBox(LeafBox):
         return self.get_overall_size(1 + 3 + 4 + url_all_size)
 
 
-class UrlBox(LeafBox):
-    def __init__(self, box_type: str):
-        super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.data: bytes = b''
-
-    def parse(self, f: BinaryIO, body_size: int):
-        self.version = f.read(1)
-        self.flags = f.read(3)
-        self.data = f.read(body_size - 4)
-        return self
-
-    def print(self, depth=0):
-        self.print_with_indent(self.box_type, depth)
-        depth += 1  # Increase the depth for nested printing
-        self.print_with_indent(f" - version: {self.version.hex()}", depth)
-        self.print_with_indent(f" - flags: {self.flags.hex()}", depth)
-        self.print_with_indent(f" - data: {self.data.hex()}", depth)
-
-    def write(self, f: BinaryIO):
-        self.write_type_and_size(f, self.box_type, self.get_size())
-        f.write(self.version)
-        f.write(self.flags)
-        f.write(self.data)
-
-    def get_size(self) -> int:
-        return self.get_overall_size(1 + 3 + len(self.data))
-
-
 class StsdBox(LeafBox):
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
+                 number_of_entries: int = 0, sample_description_table=None):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.number_of_entries: int = 0
-        self.sample_description_table: list[SampleDescription] = []
+        if sample_description_table is None:
+            sample_description_table = []
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.number_of_entries: int = number_of_entries
+        self.sample_description_table: list[SampleDescription] = sample_description_table
 
     def parse(self, f: BinaryIO, body_size: int):
         self.version = f.read(1)
@@ -565,13 +614,14 @@ class StsdBox(LeafBox):
 
 
 class SampleDescription(Mp4Component):
-    def __init__(self):
+    def __init__(self, sample_description_size: int = None, data_format: str = "", reserved1: bytes = bytes(6),
+                 data_reference_index: int = 0, rest: bytes = b''):
         super().__init__()
-        self.sample_description_size: int = 0
-        self.data_format: str = ""
-        self.reserved1: bytes = b''
-        self.data_reference_index: int = 0
-        self.rest: bytes = b''
+        self.sample_description_size: int = sample_description_size
+        self.data_format: str = data_format
+        self.reserved1: bytes = reserved1
+        self.data_reference_index: int = data_reference_index
+        self.rest: bytes = rest
 
     def parse(self, f: BinaryIO):
         begin = f.tell()
@@ -598,6 +648,8 @@ class SampleDescription(Mp4Component):
         if self.sample_description_size == 0:
             self.write_int(f, 0)
             return
+        if self.sample_description_size is None:
+            self.sample_description_size = self.get_size() + 8
         self.write_int(f, self.get_size())
         self.write_ascii(f, self.data_format)
         f.write(self.reserved1)
@@ -611,12 +663,15 @@ class SampleDescription(Mp4Component):
 
 
 class SttsBox(LeafBox):
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
+                 number_of_entries: int = 0, time_to_sample_table=None):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.number_of_entries: int = 0
-        self.time_to_sample_table: list[TimeToSample] = []
+        if time_to_sample_table is None:
+            time_to_sample_table = []
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.number_of_entries: int = number_of_entries
+        self.time_to_sample_table: list[TimeToSample] = time_to_sample_table
 
     def parse(self, f: BinaryIO, body_size: int):
         self.version = f.read(1)
@@ -652,10 +707,10 @@ class SttsBox(LeafBox):
 
 
 class TimeToSample(Mp4Component):
-    def __init__(self):
+    def __init__(self, sample_count: int = 0, sample_delta: int = 0):
         super().__init__()
-        self.sample_count = 0
-        self.sample_delta = 0
+        self.sample_count = sample_count
+        self.sample_delta = sample_delta
 
     def parse(self, f: BinaryIO):
         self.sample_count = self.read_int(f, 4)
@@ -674,12 +729,15 @@ class TimeToSample(Mp4Component):
 
 
 class StscBox(LeafBox):
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
+                 number_of_entries: int = 0, sample_to_chunk_table=None):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.number_of_entries: int = 0
-        self.sample_to_chunk_table: list[SampleToChunk] = []
+        if sample_to_chunk_table is None:
+            sample_to_chunk_table = []
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.number_of_entries: int = number_of_entries
+        self.sample_to_chunk_table: list[SampleToChunk] = sample_to_chunk_table
 
     def parse(self, f: BinaryIO, body_size: int):
         self.version = f.read(1)
@@ -715,11 +773,11 @@ class StscBox(LeafBox):
 
 
 class SampleToChunk(Mp4Component):
-    def __init__(self):
+    def __init__(self, first_chunk: int = 0, samples_per_chunk: int = 0, sample_description_id: int = 0):
         super().__init__()
-        self.first_chunk = 0
-        self.samples_per_chunk = 0
-        self.sample_description_id = 0
+        self.first_chunk = first_chunk
+        self.samples_per_chunk = samples_per_chunk
+        self.sample_description_id = sample_description_id
 
     def parse(self, f: BinaryIO):
         self.first_chunk = self.read_int(f, 4)
@@ -742,13 +800,16 @@ class SampleToChunk(Mp4Component):
 
 
 class StszBox(LeafBox):
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00', sample_size: int = 0,
+                 number_of_entries: int = 0, sample_size_table=None):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.sample_size: int = 0
-        self.number_of_entries: int = 0
-        self.sample_size_table: list[int] = []
+        if sample_size_table is None:
+            sample_size_table = []
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.sample_size: int = sample_size
+        self.number_of_entries: int = number_of_entries
+        self.sample_size_table: list[int] = sample_size_table
 
     def parse(self, f: BinaryIO, body_size: int):
         self.version = f.read(1)
@@ -782,12 +843,15 @@ class StszBox(LeafBox):
 
 
 class StcoBox(LeafBox):
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
+                 number_of_entries: int = 0, chunk_to_offset_table=None):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.number_of_entries: int = 0
-        self.chunk_to_offset_table: list[int] = []
+        if chunk_to_offset_table is None:
+            chunk_to_offset_table = []
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.number_of_entries: int = number_of_entries
+        self.chunk_to_offset_table: list[int] = chunk_to_offset_table
 
     def parse(self, f: BinaryIO, body_size: int):
         self.version = f.read(1)
@@ -811,9 +875,77 @@ class StcoBox(LeafBox):
         f.write(self.flags)
         self.write_int(f, self.number_of_entries)
         for sample_size in self.chunk_to_offset_table:
-            print(sample_size)
             self.write_int(f, sample_size)
 
     def get_size(self) -> int:
-        return self.get_overall_size(1 + 3 + 4  + 4 * self.number_of_entries)
+        return self.get_overall_size(1 + 3 + 4 + 4 * self.number_of_entries)
 
+class ElstBox(LeafBox):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
+                 number_of_entries: int = 0, edit_list_table=None):
+        super().__init__(box_type)
+        if edit_list_table is None:
+            edit_list_table = []
+        self.version: bytes = version
+        self.flags: bytes = flags
+        self.number_of_entries: int = number_of_entries
+        self.edit_list_table: list[EditList] = edit_list_table
+
+    def parse(self, f: BinaryIO, body_size: int):
+        self.version = f.read(1)
+        self.flags = f.read(3)
+        self.number_of_entries = self.read_int(f, 4)
+        for i in range(self.number_of_entries):
+            self.edit_list_table.append(EditList().parse(f))
+        return self
+
+    def print(self, depth=0):
+        self.print_with_indent("elst", depth)
+        depth += 1  # Increase the depth for nested printing
+        self.print_with_indent(f" - version: {self.version.hex()}", depth)
+        self.print_with_indent(f" - flags: {self.flags.hex()}", depth)
+        self.print_with_indent(f" - number of entries: {self.number_of_entries}", depth)
+        self.print_with_indent(f" - edit list table data:", depth)
+        for sample_to_chunk in self.edit_list_table:
+            sample_to_chunk.print(depth + 1)
+
+    def write(self, f: BinaryIO):
+        self.write_type_and_size(f, "elst", self.get_size())
+        f.write(self.version)
+        f.write(self.flags)
+        self.write_int(f, self.number_of_entries)
+        for sample_description in self.edit_list_table:
+            sample_description.write(f)
+
+    def get_size(self) -> int:
+        all_size = 0
+        for sample_to_chunk in self.edit_list_table:
+            all_size += sample_to_chunk.get_size()
+        return self.get_overall_size(1 + 3 + 4 + all_size)
+
+
+class EditList(Mp4Component):
+    def __init__(self, track_duration: int = 0, media_time: int = 0, media_rate: float = 0):
+        super().__init__()
+        self.track_duration = track_duration
+        self.media_time = media_time
+        self.media_rate = media_rate
+
+    def parse(self, f: BinaryIO):
+        self.track_duration = self.read_int(f, 4)
+        self.media_time = self.read_int(f, 4)
+        self.media_rate = self.read_fixed_float32(f)
+        return self
+
+    def print(self, depth=0):
+        self.print_with_indent(
+            f" - track_duration: {self.track_duration}, media_time: {self.media_time}, media_rate:{self.media_rate}",
+            depth)
+
+    def write(self, f: BinaryIO):
+        self.write_int(f, self.track_duration)
+        self.write_int(f, self.media_time)
+        self.write_fixed_float32(f, self.media_rate)
+
+    def get_size(self) -> int:
+        return 12

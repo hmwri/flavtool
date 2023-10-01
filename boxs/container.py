@@ -7,9 +7,12 @@ containerNames = ["moov", "trak", "edts", "minf", "stbl", "acv1", "dinf", "mdia"
 
 
 class ContainerBox(Box):
-    def __init__(self, box_type):
+    def __init__(self, box_type, children:list[Box]=None):
         super().__init__(box_type)
-        self.children: list[Box] = []
+        if children is None:
+            self.children: list[Box] = []
+        else:
+            self.children = children
 
     def __getitem__(self, item) -> Box:
         for child in self.children:
@@ -56,6 +59,8 @@ class ContainerBox(Box):
                 box = StszBox(child_box_type)
             elif child_box_type == "stco":
                 box = StcoBox(child_box_type)
+            elif child_box_type == "elst":
+                box = ElstBox(child_box_type)
             else:
                 box = UnknownBox(child_box_type)
             box.parent = self
@@ -91,8 +96,6 @@ class ContainerBox(Box):
             self.write_type_and_size(f, box_type, size)
         for child in self.children:
             child.write(f)
-
-
 
     def print(self, depth=0):
         for d in range(depth):
