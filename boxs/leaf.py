@@ -495,7 +495,7 @@ class TmhdBox(LeafBox):
 
 
 class UrlBox(LeafBox):
-    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00', data: bytes = b''):
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x01', data: bytes = b''):
         super().__init__(box_type)
         self.version: bytes = version
         self.flags: bytes = flags

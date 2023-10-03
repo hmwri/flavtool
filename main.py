@@ -29,7 +29,7 @@ box = p.parse()
 # p.parsed_box = eval.parsed
 
 composer = composer.Composer(box)
-composer.add_track(media_type="tast", data=np.array([[x,x,x,x,x] for x in range(1003)]),codec="raw5", fps=30)
+# composer.add_track(media_type="tast", data=np.array([[x%256,x%256,x%256,x%256,x%256] for x in range(1003)]),codec="raw5", fps=30)
 
 composer.compose()
 

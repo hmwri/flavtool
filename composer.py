@@ -1,5 +1,5 @@
 import io
-from components.components import  *
+from components.components import *
 from boxs.container import ContainerBox
 from boxs.leaf import *
 import numpy as np
@@ -28,16 +28,18 @@ class Composer:
                 elif subtype == "scnt":
                     self.scent_track = TrackComponent(box)
 
+        self.mdat: MdatBox = self.parsed["mdat"]
+
         self.video_sample_table = self.video_track.media.media_info.sample_table
         self.video_media_data = MediaData(
-            self.parsed["mdat"],
+            self.mdat,
             self.video_sample_table,
             "video"
         )
         self.movie_header: MvhdBox = self.parsed["moov"]["mvhd"]
         self.sound_sample_table = self.sound_track.media.media_info.sample_table
         self.sound_media_data = MediaData(
-            self.parsed["mdat"],
+            self.mdat,
             self.sound_sample_table,
             "sound"
         )
@@ -45,7 +47,7 @@ class Composer:
         if self.taste_track is not None:
             self.taste_sample_table = self.taste_track.media.media_info.sample_table
             self.taste_media_data = MediaData(
-                self.parsed["mdat"],
+                self.mdat,
                 self.taste_sample_table,
                 "tast"
             )
@@ -53,44 +55,47 @@ class Composer:
         if self.scent_track is not None:
             self.scent_sample_table = self.scent_track.media.media_info.sample_table
             self.scent_media_data = MediaData(
-                self.parsed["mdat"],
+                self.mdat,
                 self.scent_sample_table,
                 "scnt"
             )
 
-
-        self.mdat: MdatBox = self.parsed["mdat"]
-
-
-    def augment_track_to_video(self, track:TrackComponent, media_data:MediaData):
+    def augment_track_to_video(self, tracks: list[TrackComponent], media_datas: list[MediaData]):
+        track_n = len(tracks)
         video_sps = self.video_track.media.header.time_scale
-        target_sps = track.media.header.time_scale
+        target_spss = [t.media.header.time_scale for t in tracks]
 
         chunks: list[ChunkData] = []
         video_chunks = self.video_media_data.data
-        target_chunks = media_data.data
+        targets_chunks = [media_data.data for media_data in media_datas]
 
         video_chunk_offsets = []
-        target_chunk_offsets = []
-        target_i = 0
+        targets_chunk_offsets = [[] for _ in range(track_n)]
+        targets_i = [0 for _ in range(track_n)]
         offset = 0
         for video_chunk in video_chunks:
             # print(offset)
             video_chunk_offsets.append(offset)
             chunks.append(video_chunk)
             offset += video_chunk.get_size()
-            while target_i < len(target_chunks) and target_chunks[
-                target_i].begin_time / target_sps <= video_chunk.end_time / video_sps:
+            for track_i in range(track_n):
+                target_chunks = targets_chunks[track_i]
+                target_sps = target_spss[track_i]
+                target_chunk_offsets = targets_chunk_offsets[track_i]
+                while targets_i[track_i] < len(target_chunks) and target_chunks[targets_i[track_i]].begin_time / target_sps <= video_chunk.end_time / video_sps:
+                    target_chunk_offsets.append(offset)
+                    target_chunk = target_chunks[targets_i[track_i]]
+                    chunks.append(target_chunk)
+                    offset += target_chunk.get_size()
+                    targets_i[track_i] += 1
+        for track_i in range(track_n):
+            target_chunks = targets_chunks[track_i]
+            target_chunk_offsets = targets_chunk_offsets[track_i]
+            while targets_i[track_i] < len(target_chunks):
                 target_chunk_offsets.append(offset)
-                target_chunk = target_chunks[target_i]
-                chunks.append(target_chunk)
-                offset += target_chunk.get_size()
-                target_i += 1
-        while target_i < len(target_chunks):
-            target_chunk_offsets.append(offset)
-            chunks.append(target_chunks[target_i])
-            offset += target_chunks[target_i].get_size()
-            target_i += 1
+                chunks.append(target_chunks[targets_i[track_i]])
+                offset += target_chunks[targets_i[track_i]].get_size()
+                targets_i[track_i] += 1
 
         buffer = io.BytesIO()
         for chunk in chunks:
@@ -99,11 +104,14 @@ class Composer:
         self.mdat.body = buffer.read()
 
         self.create_dummy_stco(len(video_chunks), stco=self.video_sample_table.chunk_offset)
-        self.create_dummy_stco(len(target_chunks), stco=track.media.media_info.sample_table.chunk_offset)
+        for track_i in range(track_n):
+            self.create_dummy_stco(len(targets_chunks[track_i]), stco=tracks[track_i].media.media_info.sample_table.chunk_offset)
         mdat, mdat_offset = self.parsed.get_mdat_offset()
         self.mdat.begin_point = mdat_offset
         self.video_sample_table.chunk_offset.chunk_to_offset_table = [vco + mdat_offset for vco in video_chunk_offsets]
-        track.media.media_info.sample_table.chunk_offset.chunk_to_offset_table = [sco + mdat_offset for sco in target_chunk_offsets]
+        for track_i in range(track_n):
+            tracks[track_i].media.media_info.sample_table.chunk_offset.chunk_to_offset_table = [sco + mdat_offset for sco in
+                                                                                  targets_chunk_offsets[track_i]]
 
     def compose(self):
 
@@ -164,38 +172,39 @@ class Composer:
         stco.number_of_entries = chunks_len
         stco.chunk_to_offset_table = []
 
-
-    def make_chunks(self, codec, data:np.ndarray, sample_delta) -> list[ChunkData]:
+    def make_chunks(self, codec, data: np.ndarray, sample_delta) -> list[ChunkData]:
         if codec == "raw5":
             chunks = []
             sample_per_chunk = 30
             samples_in_chunks = 0
             t = 0
-            now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t, end_time=t+sample_per_chunk*sample_delta)
+            now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t,
+                                  end_time=t + sample_per_chunk * sample_delta)
             for frame_i in range(data.shape[0]):
-                sample = SampleData(data[frame_i].tolist())
+                sample = SampleData(bytes(data[frame_i].tolist()))
                 now_chunk.samples.append(sample)
                 samples_in_chunks += 1
                 if samples_in_chunks == sample_per_chunk or frame_i == data.shape[0] - 1:
                     samples_in_chunks = 0
                     chunks.append(now_chunk)
-                    now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t, end_time=t+sample_per_chunk*sample_delta)
+                    now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t,
+                                          end_time=t + sample_per_chunk * sample_delta)
                 t += sample_delta
             return chunks
         print("Unknown codec")
         return None
 
-    def add_track(self, media_type:str, data: np.ndarray, fps: float, codec: str):
-        if media_type=="tast" and self.taste_track is not None:
+    def add_track(self, media_type: str, data: np.ndarray, fps: float, codec: str):
+        if media_type == "tast" and self.taste_track is not None:
             print("already taste track exists!")
             return
-        if media_type=="scnt" and self.scent_track is not None:
+        if media_type == "scnt" and self.scent_track is not None:
             print("already scent track exists!")
             return
         frame_n = data.shape[0]
 
         sample_delta = 1000
-        chunks = self.make_chunks(codec,data, sample_delta)
+        chunks = self.make_chunks(codec, data, sample_delta)
 
         for c in chunks:
             c.print()
@@ -203,26 +212,23 @@ class Composer:
         sample_table = SampleTableCreator(chunks, codec=codec, sample_delta=sample_delta).make_sample_table()
         track_box = TrackBoxCreator(
             track_duration=frame_n * fps,
-            media_time_scale=int(fps*1000),
-            media_duration=frame_n*1000,
+            media_time_scale=int(fps * 1000),
+            media_duration=frame_n * 1000,
             component_subtype=media_type,
             component_name="TTTV3",
-            sample_table= sample_table
+            sample_table=sample_table
         ).create()
         self.parsed["moov"].children.append(track_box)
         self.parsed.print()
         if media_type == "tast":
             self.taste_track = TrackComponent(track_box)
-            self.taste_media_data = MediaData(media_type="tast", chunks=chunks)
+            self.taste_media_data = MediaData(media_type="tast", data=chunks)
         elif media_type == "scnt":
             self.scent_track = TrackComponent(track_box)
+            self.scent_media_data = MediaData(media_type="scnt", data=chunks)
         else:
             raise AssertionError
 
-    def write(self, path:str):
+    def write(self, path: str):
         with open(path, "wb") as f:
             self.parsed.write(f)
-
-
-
-

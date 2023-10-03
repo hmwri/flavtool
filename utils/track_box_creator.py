@@ -74,7 +74,7 @@ class TrackBoxCreator:
                                             box_type="dref",
                                             number_of_entries=1,
                                             data_references=[
-                                                UrlBox(box_type="url")
+                                                UrlBox(box_type="url ")
                                             ]
                                         )
                                     ]

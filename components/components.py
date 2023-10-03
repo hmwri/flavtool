@@ -87,12 +87,17 @@ class ChunkData:
             buffer.write(sample.data)
 
 class MediaData():
-    def __init__(self, parsed: MdatBox, sample_table: SampleTableComponent, media_type):
+    def __init__(self, mdat_box: MdatBox=None, sample_table: SampleTableComponent=None, media_type:str=None, data:list[ChunkData] = None):
         self.media_type = media_type
-        self.offset = parsed.begin_point
+
+        if data is not None:
+            self.data = data
+            return
+
+        self.offset = mdat_box.begin_point
 
         self.sample_table = sample_table
-        data = parsed.body
+        data = mdat_box.body
         sample_i = 0
         next_sample_to_chunk_i = 0
         samples_per_chunk = 0
