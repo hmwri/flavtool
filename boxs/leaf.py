@@ -525,7 +525,7 @@ class UrlBox(LeafBox):
 
 
 class DrefBox(LeafBox):
-    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = '\x00\x00\x00',
+    def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
                  number_of_entries: int = 0, data_references=None):
         super().__init__(box_type)
         if data_references is None:

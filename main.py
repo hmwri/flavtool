@@ -1,3 +1,5 @@
+import numpy as np
+
 import composer
 from boxs.container import ContainerBox
 import os
@@ -26,12 +28,19 @@ box = p.parse()
 #
 # p.parsed_box = eval.parsed
 
+composer = composer.Composer(box)
+composer.add_track(media_type="tast", data=np.array([[x,x,x,x,x] for x in range(1003)]),codec="raw5", fps=30)
 
-#
-p.write("output.mp4")
+composer.compose()
+
+
+
+composer.write("output.mp4")
 
 
 p = Parser("output.mp4")
 box = p.parse()
+
+
 
 #
