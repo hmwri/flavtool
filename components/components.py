@@ -60,6 +60,20 @@ class SampleData:
     def __len__(self):
         return len(self.data)
 
+class StreamingSampleData(SampleData):
+    def __init__(self, start, length):
+        super().__init__(b'')
+        self.start = start
+        self.length = length
+
+    def print(self):
+        print(f"- {self.start} ~ {self.length}", end=",")
+
+    def __len__(self):
+        return len(self.data)
+
+
+
 
 class ChunkData:
     def __init__(self, samples: list[SampleData], media_type: str,sample_description=1, begin_time=0, end_time=0):
@@ -87,7 +101,7 @@ class ChunkData:
             buffer.write(sample.data)
 
 class MediaData():
-    def __init__(self, mdat_box: MdatBox=None, sample_table: SampleTableComponent=None, media_type:str=None, data:list[ChunkData] = None):
+    def __init__(self, mdat_box: MdatBox=None, sample_table: SampleTableComponent=None, media_type:str=None, data:list[ChunkData] = None, streaming=False):
         self.media_type = media_type
 
         if data is not None:
@@ -117,7 +131,11 @@ class MediaData():
                 sample_size = sample_table.sample_size.sample_size if sample_table.sample_size.sample_size != 0 else \
                     sample_table.sample_size.sample_size_table[sample_i]
                 sample_start = (chunk_offset - self.offset) + chunk_inside_offset
-                samples.append(SampleData(data[sample_start: sample_start + sample_size]))
+                if streaming:
+                    sample = StreamingSampleData(sample_start, sample_size)
+                else:
+                    sample = SampleData(data[sample_start: sample_start + sample_size])
+                samples.append(sample)
                 chunk_inside_offset += sample_size
                 sample_i += 1
 

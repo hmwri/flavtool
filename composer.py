@@ -97,6 +97,10 @@ class Composer:
                 offset += target_chunks[targets_i[track_i]].get_size()
                 targets_i[track_i] += 1
 
+
+        for c in chunks:
+            c.print()
+
         buffer = io.BytesIO()
         for chunk in chunks:
             chunk.write(buffer)
@@ -114,13 +118,17 @@ class Composer:
                                                                                   targets_chunk_offsets[track_i]]
 
     def compose(self):
+        tracks = [self.sound_track]
+        media_datas = [self.sound_media_data]
 
-        self.augment_track_to_video(track=self.sound_track, media_data=self.sound_media_data)
         if self.taste_track is not None:
-            self.augment_track_to_video(track=self.taste_track, media_data=self.taste_media_data)
+            tracks.append(self.taste_track)
+            media_datas.append(self.taste_media_data)
 
         if self.scent_track is not None:
-            self.augment_track_to_video(track=self.scent_track, media_data=self.scent_media_data)
+            tracks.append(self.scent_track)
+            media_datas.append(self.scent_media_data)
+        self.augment_track_to_video(tracks=tracks, media_datas=media_datas)
         # time_scale
         # video_sps = self.video_track.media.header.time_scale
         # sound_sps = self.sound_track.media.header.time_scale

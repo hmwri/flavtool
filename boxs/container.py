@@ -21,7 +21,7 @@ class ContainerBox(Box):
 
 
 
-    def parse(self, f: BinaryIO, body_size: int):
+    def parse(self, f: BinaryIO, body_size: int, read_mdat_bytes=True):
         begin_byte = f.tell()
 
         while f.tell() < begin_byte + body_size:

@@ -7,11 +7,11 @@ class Parser :
         self.parsed_box = None
         self.path = path
 
-    def parse(self):
+    def parse(self, read_mdat_bytes=True):
         with open(self.path, "rb") as f:
             size = os.path.getsize(self.path)
             print(size)
-            self.parsed_box = ContainerBox("root").parse(f, size)
+            self.parsed_box = ContainerBox("root").parse(f, size, read_mdat_bytes)
             self.parsed_box.print(0)
 
 

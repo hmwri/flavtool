@@ -1,3 +1,4 @@
+import os
 from typing import BinaryIO
 from datetime import datetime, timedelta
 from boxs.box import Box, Mp4Component
@@ -101,14 +102,18 @@ class FreeBox(LeafBox):
 
 
 class MdatBox(LeafBox):
-    def __init__(self, box_type: str, is_extended: bool, begin_point: int):
+    def __init__(self, box_type: str, is_extended: bool, begin_point: int, read_bytes=True):
         super().__init__(box_type)
         self.body: bytes = b''
         self.is_size_extended = is_extended
         self.begin_point = begin_point
+        self.read_bytes = read_bytes
 
     def parse(self, f: BinaryIO, body_size: int):
-        self.body = f.read(body_size)
+        if self.read_bytes:
+            self.body = f.read(body_size)
+        else:
+            f.seek(body_size, os.SEEK_CUR)
         return self
 
     def print(self, depth=0):

@@ -58,7 +58,7 @@ class TrackBoxCreator:
                             box_type="hdlr",
                             component_type="mhlr",
                             component_subtype=self.component_subtype,
-                            component_name=self.component_name.encode("ascii")
+                            component_name=bytes(12) + self.component_name.encode("ascii")
                         ),
                         ContainerBox(
                             box_type="minf",
