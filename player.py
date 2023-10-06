@@ -21,7 +21,7 @@ class Player:
         self.sample_table = taste_track.media.media_info.sample_table
         self.codec = self.sample_table.sample_description.sample_description_table[0].data_format
         self.time_scale = taste_track.media.header.time_scale
-        self.t = 0
+        self.t = None
         self.frame_i = 0
         self.now_sample: StreamingSampleData = None
         self.all_samples = self.collect_samples(self.taste_media_data.data, self.sample_table)
@@ -36,7 +36,8 @@ class Player:
         self.playing = False
 
     def play(self):
-        self.seek(self.t)
+        if self.t is None:
+            self.seek(0)
         self.playing = True
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
         executor.submit(self.play_loop)
@@ -46,9 +47,10 @@ class Player:
         while self.playing:
             data, delta = self.next_frame()
             self.now_frame = data
+            print(data)
             self.t += delta
             time.sleep(delta)
-            print(data, delta)
+
 
 
     def collect_samples(self, chunks: list[ChunkData], sample_table: SampleTableComponent) -> list[StreamingSampleData]:
@@ -73,6 +75,7 @@ class Player:
         return result
 
     def seek(self, t):
+        self.t = t
         sample = self.get_sample(t)
         self.now_sample: StreamingSampleData = sample
         self.decode(sample)

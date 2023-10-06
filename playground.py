@@ -110,7 +110,6 @@ class TasteGraph():
             polygon_coordinates.append(
                 [self.x + self.r * np.cos(np.pi * 2/ 5 * i),self.y + self.r * np.sin(np.pi * 2/ 5 * i)]
             )
-        print(polygon_coordinates)
         pyglet.shapes.Polygon(*polygon_coordinates).draw()
 
         if data is None:
@@ -118,13 +117,14 @@ class TasteGraph():
 
         for i in range(5):
             r = self.r * data[i] / 255
+            r_n = self.r * data[(i+1) % 5] / 255
             s_x = self.x + r * np.cos(np.pi * 2/ 5 * i)
             s_y = self.y + r * np.sin(np.pi * 2/ 5 * i)
 
-            e_x = self.x + r * np.cos(np.pi * 2/ 5 * (i + 1))
-            e_y = self.y + r * np.sin(np.pi * 2/ 5 * (i + 1))
+            e_x = self.x + r_n * np.cos(np.pi * 2/ 5 * (i + 1))
+            e_y = self.y + r_n * np.sin(np.pi * 2/ 5 * (i + 1))
 
-            pyglet.shapes.Line(s_x, s_y, e_x, e_y).draw()
+            pyglet.shapes.Line(s_x, s_y, e_x, e_y, color=[255,0,0]).draw()
 
 
 
