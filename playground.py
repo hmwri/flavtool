@@ -1,10 +1,13 @@
-
-
 from __future__ import print_function
+
+import numpy as np
+
+import player as taste_player
 
 __docformat__ = 'restructuredtext'
 __version__ = '$Id: $'
 
+import time
 import os
 import sys
 import weakref
@@ -95,6 +98,41 @@ class TextButton(Button):
                     set_text)
 
 
+class TasteGraph():
+    def __init__(self, x, y, r):
+        self.x = x
+        self.y = y
+        self.r = r
+
+    def draw(self, data: np.ndarray):
+        polygon_coordinates = []
+        for i in range(5):
+            polygon_coordinates.append(
+                [self.x + self.r * np.cos(np.pi * 2/ 5 * i),self.y + self.r * np.sin(np.pi * 2/ 5 * i)]
+            )
+        print(polygon_coordinates)
+        pyglet.shapes.Polygon(*polygon_coordinates).draw()
+
+        if data is None:
+            return
+
+        for i in range(5):
+            r = self.r * data[i] / 255
+            s_x = self.x + r * np.cos(np.pi * 2/ 5 * i)
+            s_y = self.y + r * np.sin(np.pi * 2/ 5 * i)
+
+            e_x = self.x + r * np.cos(np.pi * 2/ 5 * (i + 1))
+            e_y = self.y + r * np.sin(np.pi * 2/ 5 * (i + 1))
+
+            pyglet.shapes.Line(s_x, s_y, e_x, e_y).draw()
+
+
+
+    def set_position(self, x, y):
+        self.x = x
+        self.y = y
+
+
 class Slider(Control):
     THUMB_WIDTH = 6
     THUMB_HEIGHT = 10
@@ -171,6 +209,7 @@ class PlayerWindow(pyglet.window.Window):
         self.player = weakref.proxy(player)
         self._player_playing = False
         self.player.push_handlers(self)
+        self.taste_player = taste_player.Player("output.mp4")
 
         self.slider = Slider(self)
         self.slider.push_handlers(self)
@@ -183,6 +222,8 @@ class PlayerWindow(pyglet.window.Window):
         self.play_pause_button.height = self.GUI_BUTTON_HEIGHT
         self.play_pause_button.width = 45
         self.play_pause_button.on_press = self.on_play_pause
+
+        self.taste_graph = TasteGraph(self.width/2 + self.GUI_PADDING + 100, self.height/2, 100)
 
         self.window_button = TextButton(self)
         self.window_button.x = self.play_pause_button.x + \
@@ -258,7 +299,7 @@ class PlayerWindow(pyglet.window.Window):
         width = self.GUI_WIDTH
         height = self.GUI_HEIGHT
         video_width, video_height = self.get_video_size()
-        width = max(width, video_width)
+        width = max(width, video_width) + 200
         height += video_height
         self.set_size(int(width), int(height))
 
@@ -282,8 +323,9 @@ class PlayerWindow(pyglet.window.Window):
         else:
             self.video_height = height
             self.video_width = height * video_aspect
-        self.video_x = (width - self.video_width) / 2
-        self.video_y = (height - self.video_height) / 2 + self.GUI_HEIGHT
+        self.video_x = 0
+        self.video_y = 0 + self.GUI_HEIGHT
+        self.taste_graph.set_position(self.video_x + self.video_width, 100 + self.GUI_HEIGHT)
 
     def on_mouse_press(self, x, y, button, modifiers):
         for control in self.controls:
@@ -309,11 +351,14 @@ class PlayerWindow(pyglet.window.Window):
 
     def on_play_pause(self):
         if self.player.playing:
+            self.taste_player.stop()
             self.player.pause()
         else:
             if self.player.time >= self.player.source.duration:
                 self.player.seek(0)
+                self.taste_player.stop()
             self.player.play()
+            self.taste_player.play()
         self.gui_update_state()
 
     def on_draw(self):
@@ -329,23 +374,26 @@ class PlayerWindow(pyglet.window.Window):
 
         # GUI
         self.slider.value = self.player.time
+        self.taste_graph.draw(self.taste_player.now_frame)
         for control in self.controls:
             control.draw()
 
     def on_begin_scroll(self):
         self._player_playing = self.player.playing
         self.player.pause()
+        self.taste_player.stop()
 
     def on_change(self, value):
         self.player.seek(value)
+        self.taste_player.seek(value)
 
     def on_end_scroll(self):
         if self._player_playing:
             self.player.play()
+            self.taste_player.play()
 
 
 def main(target):
-
     player = pyglet.media.Player()
     window = PlayerWindow(player)
 
@@ -357,6 +405,7 @@ def main(target):
 
     # this is an async call
     player.play()
+    window.taste_player.play()
     window.gui_update_state()
 
     pyglet.app.run()
@@ -389,9 +438,6 @@ def set_logging_parameters(target_file, dbg_file, debug):
 def usage():
     print(__doc__)
     sys.exit(1)
-
-
-
 
 
 main("tabemono.mp4")

@@ -14,8 +14,6 @@ class Parser :
             self.parsed_box = ContainerBox("root").parse(f, size, read_mdat_bytes)
             self.parsed_box.print(0)
 
-
-
         return self.parsed_box
 
     def write(self, path:str):

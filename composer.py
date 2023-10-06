@@ -8,7 +8,7 @@ from utils.track_box_creator import TrackBoxCreator
 
 
 class Composer:
-    def __init__(self, parsed_box: ContainerBox):
+    def __init__(self, parsed_box: ContainerBox, streaming=False):
         self.taste_track = None
         self.scent_track = None
         self.taste_media_data = None
@@ -34,14 +34,16 @@ class Composer:
         self.video_media_data = MediaData(
             self.mdat,
             self.video_sample_table,
-            "video"
+            "video",
+            streaming=streaming
         )
         self.movie_header: MvhdBox = self.parsed["moov"]["mvhd"]
         self.sound_sample_table = self.sound_track.media.media_info.sample_table
         self.sound_media_data = MediaData(
             self.mdat,
             self.sound_sample_table,
-            "sound"
+            "sound",
+            streaming=streaming
         )
 
         if self.taste_track is not None:
@@ -49,7 +51,8 @@ class Composer:
             self.taste_media_data = MediaData(
                 self.mdat,
                 self.taste_sample_table,
-                "tast"
+                "tast",
+            streaming=streaming
             )
 
         if self.scent_track is not None:
@@ -57,7 +60,8 @@ class Composer:
             self.scent_media_data = MediaData(
                 self.mdat,
                 self.scent_sample_table,
-                "scnt"
+                "scnt",
+            streaming=streaming
             )
 
     def augment_track_to_video(self, tracks: list[TrackComponent], media_datas: list[MediaData]):
@@ -183,7 +187,7 @@ class Composer:
     def make_chunks(self, codec, data: np.ndarray, sample_delta) -> list[ChunkData]:
         if codec == "raw5":
             chunks = []
-            sample_per_chunk = 30
+            sample_per_chunk = 50
             samples_in_chunks = 0
             t = 0
             now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t,

@@ -1,3 +1,5 @@
+import numpy
+
 from boxs.container import ContainerBox
 from boxs.leaf import *
 import io
@@ -60,17 +62,45 @@ class SampleData:
     def __len__(self):
         return len(self.data)
 
+
 class StreamingSampleData(SampleData):
     def __init__(self, start, length):
         super().__init__(b'')
         self.start = start
         self.length = length
+        self.delta = None
+        self.start_time = None
+        self.data = None
+        self.i = 0
+        self.sample_i=0
+
+
+    def set_info(self, sample_i, start_time, delta):
+        self.sample_i = sample_i
+        self.start_time = start_time
+        self.delta = delta
+
+    def set_data(self, data):
+        self.data = data
+
+    def get_frame_data(self, i):
+        self.i = 0
+        return self.data[i]
+
+    def get_next_frame_data(self):
+        self.i += 1
+        if self.i == self.data.shape[0]:
+            return None
+        result = self.data[self.i]
+        return result
 
     def print(self):
         print(f"- {self.start} ~ {self.length}", end=",")
 
     def __len__(self):
         return len(self.data)
+
+
 
 
 
@@ -116,6 +146,7 @@ class MediaData():
         next_sample_to_chunk_i = 0
         samples_per_chunk = 0
         self.data: list[ChunkData] = []
+        t = 0
         for chunk_i, chunk_offset in enumerate(sample_table.chunk_offset.chunk_to_offset_table, start=1):
 
             sample_to_chunk_table = sample_table.sample_to_chunk.sample_to_chunk_table
@@ -132,7 +163,7 @@ class MediaData():
                     sample_table.sample_size.sample_size_table[sample_i]
                 sample_start = (chunk_offset - self.offset) + chunk_inside_offset
                 if streaming:
-                    sample = StreamingSampleData(sample_start, sample_size)
+                    sample = StreamingSampleData(chunk_offset+ chunk_inside_offset, sample_size)
                 else:
                     sample = SampleData(data[sample_start: sample_start + sample_size])
                 samples.append(sample)
