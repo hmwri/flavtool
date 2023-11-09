@@ -1,0 +1,11 @@
+setup.py
+TsMovieComposer/__init__.py
+TsMovieComposer/composer.py
+TsMovieComposer/main.py
+TsMovieComposer/parser.py
+TsMovieComposer/player.py
+TsMovieComposer/playground.py
+TsMovieComposer.egg-info/PKG-INFO
+TsMovieComposer.egg-info/SOURCES.txt
+TsMovieComposer.egg-info/dependency_links.txt
+TsMovieComposer.egg-info/top_level.txt
