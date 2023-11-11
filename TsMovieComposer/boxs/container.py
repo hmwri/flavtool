@@ -1,6 +1,6 @@
 from TsMovieComposer.boxs.leaf import *
 from TsMovieComposer.boxs.box import Box
-
+from typing import Union
 containerNames = ["moov", "trak", "edts", "minf", "stbl", "acv1", "dinf", "mdia"]
 
 
@@ -12,7 +12,7 @@ class ContainerBox(Box):
         else:
             self.children = children
 
-    def __getitem__(self, item) -> Box:
+    def __getitem__(self, item) -> Union['ContainerBox',  LeafBox]:
         for child in self.children:
             if child.box_type == item:
                 return child
