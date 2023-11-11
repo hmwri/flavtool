@@ -3,8 +3,28 @@ from TsMovieComposer.boxs.leaf import *
 
 
 class TrackBoxCreator:
-    def __init__(self, track_duration, media_time_scale, media_duration, component_subtype, component_name,
-                 sample_table):
+    """
+    TrackBox を作るクラス
+    """
+    def __init__(self, track_duration :int, media_time_scale : int, media_duration : int, component_subtype : str, component_name : str,
+                 sample_table : ContainerBox):
+        """
+
+        Parameters
+        ----------
+        track_duration :int
+            トラックの長さ(Movie時間における)
+        media_time_scale :int
+            メディアタイムスケール
+        media_duration : int
+            メディアの長さ(メディア時間における)
+        component_subtype : str
+            コンポーネントサブタイプ(tast等)
+        component_name : str
+            コンポーネントネーム
+        sample_table : ContainerBox
+            サンプルテーブル
+        """
         self.track_duration = track_duration
         self.media_time_scale = media_time_scale
         self.media_duration = media_duration
@@ -12,7 +32,13 @@ class TrackBoxCreator:
         self.component_name = component_name
         self.sample_table = sample_table
 
-    def create(self):
+    def create(self) -> ContainerBox:
+        """
+        TrackBoxを作成
+        Returns
+        -------
+        track_box : ContainerBox
+        """
         now = (datetime.now() - datetime(1904, 1, 1)).total_seconds()
         track_box = ContainerBox(
             box_type="trak",

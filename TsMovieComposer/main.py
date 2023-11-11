@@ -1,7 +1,6 @@
 import numpy as np
 
 import composer
-import player
 from parser import  Parser
 
 p = Parser("./tabemono.mp4")
@@ -13,12 +12,5 @@ composer.add_track(media_type="tast", data=np.array([[int(x/2+100)%256,int(x/2+2
 composer.compose()
 
 composer.write("output.mp4")
-import time
 
 
-
-player = player.Player("./output.mp4")
-player.t = 0
-player.play()
-time.sleep(4)
-player.stop()

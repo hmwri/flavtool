@@ -161,7 +161,7 @@ class MediaData():
                     sample_table.sample_size.sample_size_table[sample_i]
                 sample_start = (chunk_offset - self.offset) + chunk_inside_offset
                 if streaming:
-                    sample = StreamingSampleData(chunk_offset+ chunk_inside_offset, sample_size)
+                    sample = StreamingSampleData(chunk_offset + chunk_inside_offset, sample_size)
                 else:
                     sample = SampleData(data[sample_start: sample_start + sample_size])
                 samples.append(sample)

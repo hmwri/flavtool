@@ -2,18 +2,31 @@ from TsMovieComposer.components.components import *
 from TsMovieComposer.boxs.container import ContainerBox
 from TsMovieComposer.boxs.leaf import *
 import numpy as np
-from .utils.sample_table_creator import SampleTableCreator
-from .utils.track_box_creator import TrackBoxCreator
+from TsMovieComposer.utils.sample_table_creator import SampleTableCreator
+from TsMovieComposer.utils.track_box_creator import TrackBoxCreator
 
 
 class Composer:
+    """
+    Composer
+        VideoとSoundがすでにあるmp4ファイルについて、味トラックと香りトラックを付け加える
+    """
     def __init__(self, parsed_box: ContainerBox, streaming=False):
-        self.taste_track = None
-        self.scent_track = None
-        self.taste_media_data = None
-        self.scent_media_data = None
+        """
+        パースされたMp4の情報をもとに、トラック情報を構築
+        Parameters
+        ----------
+        parsed_box : ContainerBox
+            パースされたMP4データ
+        streaming : bool
+            strea
+        """
+        self.taste_track : None | TrackComponent = None
+        self.scent_track : None | TrackComponent = None
+        self.taste_media_data: None | MediaData = None
+        self.scent_media_data: None | MediaData = None
 
-        self.parsed = parsed_box
+        self.parsed: ContainerBox = parsed_box
         box: ContainerBox
         for box in self.parsed["moov"].children:
             if box.box_type == "trak":

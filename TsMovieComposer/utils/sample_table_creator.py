@@ -2,14 +2,37 @@ from TsMovieComposer.components.components import *
 from TsMovieComposer.boxs.container import ContainerBox
 from TsMovieComposer.boxs.leaf import *
 
-
 class SampleTableCreator:
-    def __init__(self, chunks: list[ChunkData], sample_delta, codec):
+    """
+    サンプルテーブルを作るクラス
+    """
+    def __init__(self, chunks: list[ChunkData], sample_delta:int, codec:str):
+        """
+        サンプルテーブルを作るクラス
+
+        Parameters
+        ----------
+        chunks : list[ChunkData]
+            対象のチャンクデータ
+        sample_delta : int
+            1サンプルの長さ(トラック時間換算)
+        codec : str
+            コーデック
+        """
         self.chunks = chunks
         self.sample_delta = sample_delta
         self.codec = codec
 
-    def make_sample_to_chunk_table(self):
+    def __make_sample_to_chunk_table(self) -> list[SampleToChunk]:
+        """
+        SampleToChunkテーブル(どのサンプルがどのチャンクに属するか)を作成する
+
+        Returns
+        ----------
+        sample_to_chunk_table : list[SampleToChunk]
+            SampToChunk 構造体のリスト
+
+        """
         sample_to_chunk_table: list[SampleToChunk] = []
         pre_sample_per_chunk = -1
         for i, c in enumerate(self.chunks, start=1):
@@ -18,7 +41,14 @@ class SampleTableCreator:
                 pre_sample_per_chunk = len(c.samples)
         return sample_to_chunk_table
 
-    def get_sample_size(self):
+    def __get_sample_size(self) -> tuple[int, list[int]]:
+        """
+        サンプルサイズを計算し、サンプルサイズテーブルを返す
+        Returns
+        -------
+        sample_size: tuple[int, list[int]]
+            すべて同じサイズなら、(サイズ、空配列), 異なるサイズなら(0、サイズの配列)を返します
+        """
         sizes = []
         all_same = True
         for c in self.chunks:
@@ -33,11 +63,19 @@ class SampleTableCreator:
             return 0, sizes
 
 
-    # サンプルテーブルを作成(Stcoを除く StcoはCompose時に作成)
-    def make_sample_table(self):
+
+    def make_sample_table(self) -> ContainerBox:
+        """
+        サンプルテーブルを作成する(Stcoの中身を除く)
+        Returns
+        -------
+        sample_table : ContainerBox
+            サンプルテーブル(Container Box-Stbl)
+
+        """
         sample_count = sum(len(c.samples) for c in self.chunks)
-        sample_to_chunk_table = self.make_sample_to_chunk_table()
-        sample_size, sample_size_table = self.get_sample_size()
+        sample_to_chunk_table = self.__make_sample_to_chunk_table()
+        sample_size, sample_size_table = self.__get_sample_size()
         sample_table = ContainerBox(
             box_type="stbl",
             children=[
