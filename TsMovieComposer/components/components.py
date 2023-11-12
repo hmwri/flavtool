@@ -155,7 +155,7 @@ class MediaData():
             samples: list[SampleData] = []
             chunk_inside_offset = 0
 
-            begin_time = self.get_time_of_sample(sample_i)
+            begin_time = self.__get_time_of_sample(sample_i)
             for j in range(samples_per_chunk):
                 sample_size = sample_table.sample_size.sample_size if sample_table.sample_size.sample_size != 0 else \
                     sample_table.sample_size.sample_size_table[sample_i]
@@ -168,13 +168,16 @@ class MediaData():
                 chunk_inside_offset += sample_size
                 sample_i += 1
 
-            end_time = self.get_time_of_sample(sample_i - 1,criteria="end")
+            end_time = self.__get_time_of_sample(sample_i - 1,criteria="end")
             self.data.append(ChunkData(samples, self.media_type, begin_time=begin_time, end_time=end_time))
         for d in self.data:
             d.print()
 
+    @classmethod
+    def from_mdat_box(cls, mdat_box: MdatBox):
 
-    def get_time_of_sample(self, sample_i, criteria="start"):
+
+    def __get_time_of_sample(self, sample_i, criteria="start"):
         table = self.sample_table.time_to_sample.time_to_sample_table
         t = 0
         sample_n = 0
