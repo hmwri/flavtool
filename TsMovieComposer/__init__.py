@@ -1,2 +1,2 @@
 from .composer import Composer
-from .parser import Parser
+from TsMovieComposer.parser._parser import Parser

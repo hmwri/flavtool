@@ -1,5 +1,5 @@
-from TsMovieComposer.boxs.container import ContainerBox
-from TsMovieComposer.boxs.leaf import *
+from TsMovieComposer.parser.boxs.container import ContainerBox
+from TsMovieComposer.parser.boxs.leaf import *
 
 
 class TrackBoxCreator:

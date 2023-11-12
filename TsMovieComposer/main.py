@@ -1,7 +1,7 @@
 import numpy as np
 
 import composer
-from parser import  Parser
+from TsMovieComposer.parser import  Parser
 
 p = Parser("./tabemono.mp4")
 box = p.parse()
