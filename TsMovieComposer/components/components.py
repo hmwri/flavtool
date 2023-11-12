@@ -129,22 +129,23 @@ class ChunkData:
             buffer.write(sample.data)
 
 class MediaData():
-    def __init__(self, mdat_box: MdatBox=None, sample_table: SampleTableComponent=None, media_type:str=None, data:list[ChunkData] = None, streaming=False):
+    def __init__(self, media_type:str,
+                 data:list[ChunkData]):
         self.media_type = media_type
+        self.data: list[ChunkData] = data
 
-        if data is not None:
-            self.data = data
-            return
 
-        self.offset = mdat_box.begin_point
+    @classmethod
+    def from_mdat_box(cls, mdat_box: MdatBox, sample_table: SampleTableComponent, media_type:str,
+                  streaming=False) -> 'MediaData':
+        offset = mdat_box.begin_point
 
-        self.sample_table = sample_table
-        data = mdat_box.body
+        sample_table = sample_table
+        byte_data = mdat_box.body
         sample_i = 0
         next_sample_to_chunk_i = 0
         samples_per_chunk = 0
-        self.data: list[ChunkData] = []
-        t = 0
+        data: list[ChunkData] = []
         for chunk_i, chunk_offset in enumerate(sample_table.chunk_offset.chunk_to_offset_table, start=1):
 
             sample_to_chunk_table = sample_table.sample_to_chunk.sample_to_chunk_table
@@ -155,30 +156,26 @@ class MediaData():
             samples: list[SampleData] = []
             chunk_inside_offset = 0
 
-            begin_time = self.__get_time_of_sample(sample_i)
+            begin_time = cls.__get_time_of_sample(sample_i, sample_table)
             for j in range(samples_per_chunk):
                 sample_size = sample_table.sample_size.sample_size if sample_table.sample_size.sample_size != 0 else \
                     sample_table.sample_size.sample_size_table[sample_i]
-                sample_start = (chunk_offset - self.offset) + chunk_inside_offset
+                sample_start = (chunk_offset - offset) + chunk_inside_offset
                 if streaming:
                     sample = StreamingSampleData(chunk_offset + chunk_inside_offset, sample_size)
                 else:
-                    sample = SampleData(data[sample_start: sample_start + sample_size])
+                    sample = SampleData(byte_data[sample_start: sample_start + sample_size])
                 samples.append(sample)
                 chunk_inside_offset += sample_size
                 sample_i += 1
 
-            end_time = self.__get_time_of_sample(sample_i - 1,criteria="end")
-            self.data.append(ChunkData(samples, self.media_type, begin_time=begin_time, end_time=end_time))
-        for d in self.data:
-            d.print()
+            end_time = cls.__get_time_of_sample(sample_i - 1,sample_table,criteria="end")
+            data.append(ChunkData(samples,media_type, begin_time=begin_time, end_time=end_time))
+        return cls(media_type, data)
 
     @classmethod
-    def from_mdat_box(cls, mdat_box: MdatBox):
-
-
-    def __get_time_of_sample(self, sample_i, criteria="start"):
-        table = self.sample_table.time_to_sample.time_to_sample_table
+    def __get_time_of_sample(cls, sample_i, sample_table: SampleTableComponent, criteria="start"):
+        table = sample_table.time_to_sample.time_to_sample_table
         t = 0
         sample_n = 0
         for td in table:

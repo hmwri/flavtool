@@ -39,22 +39,12 @@ class Composer:
             strea
         """
 
-
-
-
         self.tracks: dict[media_types, TrackComponent | None] = {
             "tast": None,
             "soun": None,
             "vide": None,
             "scnt": None,
         }
-        #
-        # self.__sample_tables: dict[media_types, SampleTableComponent | None] = {
-        #     "tast": None,
-        #     "soun": None,
-        #     "vide": None,
-        #     "scnt": None,
-        # }
 
         self.media_datas: dict[media_types, MediaData | None] = {
             "tast": None,
@@ -90,7 +80,7 @@ class Composer:
 
                 subtype: media_types
                 self.tracks[subtype] = TrackComponent(box)
-                self.media_datas[subtype] = MediaData(
+                self.media_datas[subtype] = MediaData.from_mdat_box(
                     self.mdat,
                     self.sample_tables[subtype],
                     subtype,
@@ -167,24 +157,14 @@ class Composer:
                 return criteria, others
 
 
-    def compose(self, include_media_types : list[media_types]):
-        compose_media_types = []
-        for k, v in self.tracks.items():
-            if v is not None:
-                compose_media_types.append(k)
+    def compose(self, include_media_types : None |list[media_types] = None):
+        if include_media_types is None:
+            include_media_types = []
+            for k, v in self.tracks.items():
+                if v is not None:
+                    include_media_types.append(k)
 
-        # tracks = [self.sound_track]
-        # media_datas = [self.sound_media_data]
-        #
-        # if self.taste_track is not None:
-        #     tracks.append(self.taste_track)
-        #     media_datas.append(self.taste_media_data)
-        #
-        # if self.scent_track is not None:
-        #     tracks.append(self.scent_track)
-        #     media_datas.append(self.scent_media_data)
-
-        criteria_media_type, target_media_types = self.__select_criteria(compose_media_types)
+        criteria_media_type, target_media_types = self.__select_criteria(include_media_types)
         chunks, offsets = self.__generate_interleave_chunks(criteria_media_type,target_media_types)
 
         # for c in chunks:
@@ -196,7 +176,7 @@ class Composer:
         buffer.seek(0)
         self.mdat.body = buffer.read()
 
-        for cm in compose_media_types:
+        for cm in include_media_types:
             print(len(offsets[cm]))
             self.__create_dummy_stco(len(offsets[cm]), stco=self.sample_tables[cm].chunk_offset)
 
@@ -204,56 +184,17 @@ class Composer:
 
         self.mdat.begin_point = mdat_offset
 
-        for cm in compose_media_types:
+        for cm in include_media_types:
             print(cm)
             self.sample_tables[cm].chunk_offset.chunk_to_offset_table = [co + mdat_offset for co in offsets[cm]]
         self.sample_tables["soun"].chunk_offset.print()
         self.parsed.print()
 
-        # time_scale
-        # video_sps = self.video_track.media.header.time_scale
-        # sound_sps = self.sound_track.media.header.time_scale
-        #
-        # chunks: list[ChunkData] = []
-        # video_chunks = self.video_media_data.data
-        # sound_chunks = self.sound_media_data.data
-        #
-        #
-        # video_chunk_offsets = []
-        # sound_chunk_offsets = []
-        # sound_i = 0
-        # offset = 0
-        # for video_chunk in video_chunks:
-        #     #print(offset)
-        #     video_chunk_offsets.append(offset)
-        #     chunks.append(video_chunk)
-        #     offset += video_chunk.get_size()
-        #     while sound_i < len(sound_chunks) and sound_chunks[
-        #         sound_i].begin_time / sound_sps <= video_chunk.end_time / video_sps:
-        #         sound_chunk_offsets.append(offset)
-        #         sound_chunk = sound_chunks[sound_i]
-        #         chunks.append(sound_chunk)
-        #         offset += sound_chunk.get_size()
-        #         sound_i += 1
-        # while sound_i < len(sound_chunks):
-        #     sound_chunk_offsets.append(offset)
-        #     chunks.append(sound_chunks[sound_i])
-        #     offset += sound_chunks[sound_i].get_size()
-        #     sound_i += 1
-        #
-        # buffer = io.BytesIO()
-        # for chunk in chunks:
-        #     chunk.write(buffer)
-        # buffer.seek(0)
-        # self.mdat.body = buffer.read()
-        #
-        # self.create_dummy_stco(len(video_chunks), stco=self.video_sample_table.chunk_offset)
-        # self.create_dummy_stco(len(sound_chunks), stco=self.sound_sample_table.chunk_offset)
-        # mdat, mdat_offset = self.parsed.get_mdat_offset()
-        # self.mdat.begin_point = mdat_offset
-        # self.video_sample_table.chunk_offset.chunk_to_offset_table = [vco + mdat_offset for vco in video_chunk_offsets]
-        # self.sound_sample_table.chunk_offset.chunk_to_offset_table = [sco + mdat_offset for sco in sound_chunk_offsets]
-        # #print(self.sound_sample_table.chunk_offset)
+    def set_track(self, media_type:media_types, track_component:TrackComponent):
+        if self.tracks[media_type] != None:
+            self.parsed["moov"].children.remove(self.tracks[media_type].parsed)
+        self.parsed["moov"].children.append(track_component.parsed)
+        self.tracks[media_type] = track_component
 
     def __create_dummy_stco(self, chunks_len: int, stco: StcoBox):
         if stco is None:
@@ -306,11 +247,11 @@ class Composer:
             component_name="TTTV3",
             sample_table=sample_table
         ).create()
-        self.parsed["moov"].children.append(track_box)
-        self.tracks[media_type] = TrackComponent(track_box)
+        self.set_track(media_type,TrackComponent(track_box))
         self.media_datas[media_type] = MediaData(media_type=media_type, data=chunks)
 
 
     def write(self, path: str):
+        self.compose()
         with open(path, "wb") as f:
             self.parsed.write(f)
