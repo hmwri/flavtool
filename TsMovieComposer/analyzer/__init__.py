@@ -1,2 +1,3 @@
-from analyze import analyze
-from FlavMp4 import FlavMP4
+from .analyze import analyze
+from .flavMp4 import FlavMP4
+from .components import components

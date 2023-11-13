@@ -32,7 +32,7 @@ class ContainerBox(Box):
             elif child_box_type == "free":
                 box = FreeBox(child_box_type)
             elif child_box_type == "mdat":
-                box = MdatBox(child_box_type,is_extended, f.tell())
+                box = MdatBox(child_box_type,is_extended, f.tell(), read_mdat_bytes)
             elif child_box_type == "mvhd":
                 box = MvhdBox(child_box_type)
             elif child_box_type == "tkhd":

@@ -1,4 +1,4 @@
-from TsMovieComposer.components.components import *
+from TsMovieComposer.analyzer.components.components import *
 from TsMovieComposer.parser.boxs.container import ContainerBox
 from TsMovieComposer.parser.boxs.leaf import *
 import numpy as np
