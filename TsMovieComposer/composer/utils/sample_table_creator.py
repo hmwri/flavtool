@@ -16,7 +16,7 @@ class SampleTableCreator:
         chunks : list[ChunkData]
             対象のチャンクデータ
         sample_delta : int
-            1サンプルの長さ(トラック時間換算)
+            1サンプルの長さ(トラック時間換算) (可変FPSには非対応)
         codec : str
             コーデック
         """

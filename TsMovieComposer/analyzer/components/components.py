@@ -23,8 +23,6 @@ class MediaComponent(EvalComponent):
         self.media_info: MediaInfoComponent = MediaInfoComponent(parsed["minf"])
 
 
-
-
 class MediaInfoComponent(EvalComponent):
     def __init__(self, parsed: ContainerBox):
         super().__init__(parsed)

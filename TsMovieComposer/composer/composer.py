@@ -170,7 +170,7 @@ class Composer:
         now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t,
                               end_time=t + sample_per_chunk * sample_delta)
         for frame_i in range(data.shape[0]):
-            sample = SampleData(encoder(data[frame_i]))
+            sample = SampleData(encoder(data[frame_i]), sample_delta)
             print(sample.data)
             now_chunk.samples.append(sample)
             samples_in_chunks += 1

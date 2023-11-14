@@ -750,6 +750,7 @@ class StscBox(LeafBox):
         self.number_of_entries = self.read_int(f, 4)
         for i in range(self.number_of_entries):
             self.sample_to_chunk_table.append(SampleToChunk().parse(f))
+
         return self
 
     def print(self, depth=0):

@@ -1,6 +1,7 @@
 class SampleData:
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes, delta:int):
         self.data = data
+        self.delta = delta
 
     def print(self):
         print("-", len(self.data), end=",")
@@ -10,21 +11,14 @@ class SampleData:
 
 
 class StreamingSampleData(SampleData):
-    def __init__(self, start, length):
-        super().__init__(b'')
+    def __init__(self, start:int, length:int, delta:int):
+        super().__init__(b'', delta)
         self.start = start
         self.length = length
         self.delta = None
-        self.start_time = None
         self.data = None
         self.i = 0
         self.sample_i=0
-
-
-    def set_info(self, sample_i, start_time, delta):
-        self.sample_i = sample_i
-        self.start_time = start_time
-        self.delta = delta
 
     def set_data(self, data):
         self.data = data
