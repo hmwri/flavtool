@@ -131,7 +131,6 @@ class Composer:
         self.flav_mp4.mdat.body = buffer.read()
 
         for cm in include_media_types:
-            print(len(offsets[cm]))
             self.__create_dummy_stco(len(offsets[cm]), stco=self.sample_tables[cm].chunk_offset)
 
         mdat, mdat_offset = self.flav_mp4.parsed.get_mdat_offset()
@@ -139,9 +138,7 @@ class Composer:
         self.flav_mp4.mdat.begin_point = mdat_offset
 
         for cm in include_media_types:
-            print(cm)
             self.sample_tables[cm].chunk_offset.chunk_to_offset_table = [co + mdat_offset for co in offsets[cm]]
-        self.sample_tables["soun"].chunk_offset.print()
         self.flav_mp4.parsed.print()
 
     def set_track(self, media_type:media_types, track_component:TrackComponent):
@@ -167,8 +164,7 @@ class Composer:
         sample_per_chunk = 50
         samples_in_chunks = 0
         t = 0
-        now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t,
-                              end_time=t + sample_per_chunk * sample_delta)
+        now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t)
         for frame_i in range(data.shape[0]):
             sample = SampleData(encoder(data[frame_i]), sample_delta)
             print(sample.data)
@@ -177,8 +173,7 @@ class Composer:
             if samples_in_chunks == sample_per_chunk or frame_i == data.shape[0] - 1:
                 samples_in_chunks = 0
                 chunks.append(now_chunk)
-                now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t,
-                                      end_time=t + sample_per_chunk * sample_delta)
+                now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t)
             t += sample_delta
         return chunks
 
@@ -211,6 +206,5 @@ class Composer:
 
 
     def write(self, path: str):
-        self.compose()
         with open(path, "wb") as f:
             self.flav_mp4.parsed.write(f)

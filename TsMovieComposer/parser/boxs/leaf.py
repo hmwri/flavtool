@@ -48,11 +48,12 @@ class UnknownBox(LeafBox):
 
 class FtypBox(LeafBox):
 
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str, major_brand="", compatible_brands=None):
         super().__init__(box_type)
-        self.major_brand: str = ""
-        self.minor_version: bytes = b''
-        self.compatible_brands: list[str] = []
+        self.major_brand: str = major_brand
+        self.minor_version: bytes = b'\x00\x00\x00\x01'
+
+        self.compatible_brands: list[str] = [] if compatible_brands is None else compatible_brands
 
     def parse(self, f: BinaryIO, body_size: int):
         self.major_brand = self.read_ascii(f, 4)
@@ -102,7 +103,7 @@ class FreeBox(LeafBox):
 
 
 class MdatBox(LeafBox):
-    def __init__(self, box_type: str, is_extended: bool, begin_point: int, read_bytes=True):
+    def __init__(self, box_type: str, is_extended: bool, begin_point: int|None, read_bytes=True):
         super().__init__(box_type)
         self.body: bytes = b''
         self.is_size_extended = is_extended
@@ -130,20 +131,24 @@ class MdatBox(LeafBox):
 
 
 class MvhdBox(LeafBox):
-    def __init__(self, box_type: str):
+    def __init__(self, box_type: str = '', version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
+                 creation_time: int = 0, modification_time: int = 0, time_scale: int = 0,
+                 duration: int = 0, preferred_rate: float = 1.0, preferred_volume: float = 1.0,
+                 reserved: bytes = bytes(10), matrix: bytes = bytes(36), predefines: bytes = bytes(24),
+                 next_track_id: bytes = b'\x00\x00\x00\x01'):
         super().__init__(box_type)
-        self.version: bytes = b''
-        self.flags: bytes = b''
-        self.creation_time: int = 0
-        self.modification_time: int = 0
-        self.time_scale: int = 0
-        self.duration: int = 0
-        self.preferred_rate: float = 0
-        self.preferred_volume: float = 0
-        self.reserved = b''
-        self.matrix = b''
-        self.predefines = b''
-        self.next_track_id = b''
+        self.version = version
+        self.flags = flags
+        self.creation_time = creation_time
+        self.modification_time = modification_time
+        self.time_scale = time_scale
+        self.duration = duration
+        self.preferred_rate = preferred_rate
+        self.preferred_volume = preferred_volume
+        self.reserved = reserved
+        self.matrix = matrix
+        self.predefines = predefines
+        self.next_track_id = next_track_id
 
     def parse(self, f: BinaryIO, body_size: int):
         begin = f.tell()

@@ -1,4 +1,3 @@
-from TsMovieComposer.analyzer.components.components import *
 from TsMovieComposer.analyzer.media_data import ChunkData
 from TsMovieComposer.parser.boxs.container import ContainerBox
 from TsMovieComposer.parser.boxs.leaf import *
@@ -7,7 +6,7 @@ class SampleTableCreator:
     """
     サンプルテーブルを作るクラス
     """
-    def __init__(self, chunks: list[ChunkData], sample_delta:int, codec:str):
+    def __init__(self, chunks: list[ChunkData], codec:str):
         """
         サンプルテーブルを作るクラス
 
@@ -15,13 +14,10 @@ class SampleTableCreator:
         ----------
         chunks : list[ChunkData]
             対象のチャンクデータ
-        sample_delta : int
-            1サンプルの長さ(トラック時間換算) (可変FPSには非対応)
         codec : str
             コーデック
         """
         self.chunks = chunks
-        self.sample_delta = sample_delta
         self.codec = codec
 
     def __make_sample_to_chunk_table(self) -> list[SampleToChunk]:
@@ -50,18 +46,47 @@ class SampleTableCreator:
         sample_size: tuple[int, list[int]]
             すべて同じサイズなら、(サイズ、空配列), 異なるサイズなら(0、サイズの配列)を返します
         """
-        sizes = []
+        sizes = [len(self.chunks[0][0].data)]
+        first = True
         all_same = True
         for c in self.chunks:
             for s in c.samples:
-                size = len(s.data)
-                sizes.append(size)
-                if all_same and size != sizes[-1]:
-                    all_same = False
+                if not first:
+                    size = len(s.data)
+                    if size != sizes[-1]:
+                        all_same =False
+                        break
+                    sizes.append(size)
+                first = False
+
         if all_same:
             return sizes[0], []
         else:
             return 0, sizes
+
+
+    def __make_time_to_sample_table(self) -> list[TimeToSample]:
+        deltas = [self.chunks[0][0].delta]
+        table : list[TimeToSample] = [
+            TimeToSample(1, deltas[0])
+        ]
+        first = True
+        for c in self.chunks:
+            for s in c.samples:
+                if not first:
+                    delta = s.delta
+                    if delta != table[-1].sample_delta :
+                        table.append(TimeToSample(1, delta))
+                    else:
+                        table[-1].sample_count += 1
+                    deltas.append(delta)
+                first = False
+        return table
+
+
+
+
+
 
 
 
@@ -74,9 +99,10 @@ class SampleTableCreator:
             サンプルテーブル(Container Box-Stbl)
 
         """
-        sample_count = sum(len(c.samples) for c in self.chunks)
+
         sample_to_chunk_table = self.__make_sample_to_chunk_table()
         sample_size, sample_size_table = self.__get_sample_size()
+        time_to_sample = self.__make_time_to_sample_table()
         sample_table = ContainerBox(
             box_type="stbl",
             children=[
@@ -93,13 +119,8 @@ class SampleTableCreator:
                 ),
                 SttsBox(
                     box_type="stts",
-                    number_of_entries=1,
-                    time_to_sample_table=[
-                        TimeToSample(
-                            sample_count=sample_count,
-                            sample_delta=self.sample_delta
-                        )
-                    ]
+                    number_of_entries=len(time_to_sample),
+                    time_to_sample_table=self.__make_time_to_sample_table()
                 ),
                 StscBox(
                     box_type="stsc",

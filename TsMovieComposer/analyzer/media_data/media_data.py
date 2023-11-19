@@ -49,7 +49,7 @@ class MediaData():
                 sample_i += 1
 
             end_time = t
-            data.append(ChunkData(samples,media_type, begin_time=begin_time, end_time=end_time))
+            data.append(ChunkData(samples,media_type, begin_time=begin_time))
         return cls(media_type, data)
 
 

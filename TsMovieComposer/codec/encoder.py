@@ -5,7 +5,9 @@ import numpy as np
 
 def raw5_encoder(data: np.ndarray) -> bytes:
     if data.dtype != np.uint8:
-        raise Exception("Dtype Error. Only ndarray dtype=np.uint8 can be supported")
+        raise Exception("Encode Error. Only ndarray dtype=np.uint8 is supported")
+    if not (data.shape[0] == 5 and len(data) == 5):
+        raise Exception("Encode Error. Only ndarray (5,1) is supported")
     return data.tobytes()
 
 

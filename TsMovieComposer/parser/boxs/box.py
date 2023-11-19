@@ -100,7 +100,7 @@ class Box(Mp4Component):
         self.parent:Mp4Component= None
 
 
-    def parse(self, f: BinaryIO, body_size: int):
+    def parse(self, f, body_size: int):
         raise NotImplemented
 
     def print(self, depth=0):

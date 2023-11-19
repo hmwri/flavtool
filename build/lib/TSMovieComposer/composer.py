@@ -2,7 +2,7 @@ from TsMovieComposer.analyzer.components.components import *
 from TsMovieComposer.parser.boxs.container import ContainerBox
 from TsMovieComposer.parser.boxs.leaf import *
 import numpy as np
-from utils.sample_table_creator import SampleTableCreator
+from TsMovieComposer.utils.sample_table_creator import SampleTableCreator
 from utils.track_box_creator import TrackBoxCreator
 
 
