@@ -158,51 +158,51 @@ class Composer:
         stco.number_of_entries = chunks_len
         stco.chunk_to_offset_table = []
 
-    def __make_chunks(self, codec, data: np.ndarray, sample_delta) -> list[ChunkData]:
-        encoder = get_encoder(codec)
-        chunks = []
-        sample_per_chunk = 50
-        samples_in_chunks = 0
-        t = 0
-        now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t)
-        for frame_i in range(data.shape[0]):
-            sample = SampleData(encoder(data[frame_i]), sample_delta)
-            print(sample.data)
-            now_chunk.samples.append(sample)
-            samples_in_chunks += 1
-            if samples_in_chunks == sample_per_chunk or frame_i == data.shape[0] - 1:
-                samples_in_chunks = 0
-                chunks.append(now_chunk)
-                now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t)
-            t += sample_delta
-        return chunks
-
-    def add_track(self, media_type: media_types, data: np.ndarray, fps: float, codec: str, replace=False):
-        if not replace:
-            if self.flav_mp4.tracks[media_type] is not None:
-                print(f"Already track:{media_type} exists, If you want to replace, please set replace tag to true")
-                return
-
-        frame_n = data.shape[0]
-        sample_delta = 1000
-        chunks = self.__make_chunks(codec, data, sample_delta)
-
-        for c in chunks:
-            c.print()
-
-        mov_time_scale = self.flav_mp4.mov_header.time_scale
-
-        sample_table = SampleTableCreator(chunks, codec=codec, sample_delta=sample_delta).make_sample_table()
-        track_box = TrackBoxCreator(
-            track_duration=int(frame_n * mov_time_scale / fps),
-            media_time_scale=int(fps * 1000),
-            media_duration=frame_n * 1000,
-            component_subtype=media_type,
-            component_name="TTTV3",
-            sample_table=sample_table
-        ).create()
-        self.set_track(media_type,TrackComponent(track_box))
-        self.flav_mp4.media_datas[media_type] = MediaData(media_type=media_type, data=chunks)
+    # def __make_chunks(self, codec, data: np.ndarray, sample_delta) -> list[ChunkData]:
+    #     encoder = get_encoder(codec)
+    #     chunks = []
+    #     sample_per_chunk = 50
+    #     samples_in_chunks = 0
+    #     t = 0
+    #     now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t)
+    #     for frame_i in range(data.shape[0]):
+    #         sample = SampleData(encoder(data[frame_i]), sample_delta)
+    #         print(sample.data)
+    #         now_chunk.samples.append(sample)
+    #         samples_in_chunks += 1
+    #         if samples_in_chunks == sample_per_chunk or frame_i == data.shape[0] - 1:
+    #             samples_in_chunks = 0
+    #             chunks.append(now_chunk)
+    #             now_chunk = ChunkData(samples=[], media_type="tast", begin_time=t)
+    #         t += sample_delta
+    #     return chunks
+    #
+    # def add_track(self, media_type: media_types, data: np.ndarray, fps: float, codec: str, replace=False):
+    #     if not replace:
+    #         if self.flav_mp4.tracks[media_type] is not None:
+    #             print(f"Already track:{media_type} exists, If you want to replace, please set replace tag to true")
+    #             return
+    #
+    #     frame_n = data.shape[0]
+    #     sample_delta = 1000
+    #     chunks = self.__make_chunks(codec, data, sample_delta)
+    #
+    #     for c in chunks:
+    #         c.print()
+    #
+    #     mov_time_scale = self.flav_mp4.mov_header.time_scale
+    #
+    #     sample_table = SampleTableCreator(chunks, codec=codec, sample_delta=sample_delta).make_sample_table()
+    #     track_box = TrackBoxCreator(
+    #         track_duration=int(frame_n * mov_time_scale / fps),
+    #         media_time_scale=int(fps * 1000),
+    #         media_duration=frame_n * 1000,
+    #         component_subtype=media_type,
+    #         component_name="TTTV3",
+    #         sample_table=sample_table
+    #     ).create()
+    #     self.set_track(media_type,TrackComponent(track_box))
+    #     self.flav_mp4.media_datas[media_type] = MediaData(media_type=media_type, data=chunks)
 
 
     def write(self, path: str):
