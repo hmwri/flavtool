@@ -1,8 +1,8 @@
-from TsMovieComposer.analyzer.components.components import *
-from TsMovieComposer.parser.boxs.container import ContainerBox
-from TsMovieComposer.parser.boxs.leaf import *
+from flavtool.analyzer.components.components import *
+from flavtool.parser.boxs.container import ContainerBox
+from flavtool.parser.boxs.leaf import *
 import numpy as np
-from TsMovieComposer.utils.sample_table_creator import SampleTableCreator
+from flavtool.utils.sample_table_creator import SampleTableCreator
 from utils.track_box_creator import TrackBoxCreator
 
 

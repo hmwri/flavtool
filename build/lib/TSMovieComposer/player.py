@@ -4,7 +4,7 @@ import numpy as np
 
 import composer
 import parser
-from TsMovieComposer.analyzer.components.components import *
+from flavtool.analyzer.components.components import *
 import time
 import concurrent.futures
 

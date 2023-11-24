@@ -1,5 +1,5 @@
 import os
-from TsMovieComposer.parser.boxs.container import ContainerBox
+from flavtool.parser.boxs.container import ContainerBox
 
 class Parser :
     def __init__(self, path):

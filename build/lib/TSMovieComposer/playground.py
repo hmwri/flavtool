@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import numpy as np
 
-from TsMovieComposer import player as taste_player
+from flavtool import player as taste_player
 
 __docformat__ = 'restructuredtext'
 __version__ = '$Id: $'
