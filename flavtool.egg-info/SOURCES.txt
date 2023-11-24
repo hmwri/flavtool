@@ -1,6 +1,6 @@
+README.md
 setup.py
 flavtool/__init__.py
-flavtool/main.py
 flavtool.egg-info/PKG-INFO
 flavtool.egg-info/SOURCES.txt
 flavtool.egg-info/dependency_links.txt
