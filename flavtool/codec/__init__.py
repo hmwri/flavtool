@@ -1,8 +1,8 @@
 from typing import Literal
 from .decoder import decoders, decoder_func_type
 from .encoder import encoders, encoder_func_type
-supported_codec_type = Literal["raw5"]
-supported_codecs = ["raw5"]
+supported_codec_type = Literal["raw5", "rmix"]
+supported_codecs = ["raw5", "rmix"]
 
 def get_decoder(codec : supported_codec_type) -> decoder_func_type :
     if codec not in supported_codecs:

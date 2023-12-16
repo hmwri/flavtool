@@ -2,7 +2,7 @@ import os
 from typing import BinaryIO
 from datetime import datetime, timedelta
 from flavtool.parser.boxs.box import Box, Mp4Component
-
+from flavtool.codec.codec_options import MixInfo
 epoch_1904 = datetime(1904, 1, 1)
 
 
@@ -579,6 +579,7 @@ class DrefBox(LeafBox):
         return self.get_overall_size(1 + 3 + 4 + url_all_size)
 
 
+
 class StsdBox(LeafBox):
     def __init__(self, box_type: str, version: bytes = b'\x00', flags: bytes = b'\x00\x00\x00',
                  number_of_entries: int = 0, sample_description_table=None):
@@ -623,14 +624,67 @@ class StsdBox(LeafBox):
         return self.get_overall_size(1 + 3 + 4 + table_all_size)
 
 
+class SolutionInfo():
+    def __init__(self, name, concentration : float, max_amount):
+        self.name :str = name
+        self.concentration : float = concentration
+        self.max_amount : float = max_amount
+
+class RawMixCodec(Mp4Component):
+    def __init__(self, number_of_entries: int = 0, mix_info : list[MixInfo] = None):
+        super().__init__()
+        self.number_of_entries = number_of_entries
+        if mix_info is None:
+            self.infos : list[MixInfo] = []
+        else:
+            self.infos : list[MixInfo] = mix_info
+
+    def parse(self, f: BinaryIO):
+        self.number_of_entries = self.read_int(f, 4)
+        if self.number_of_entries == 0:
+            return
+        for i in range(self.number_of_entries):
+            name = self.read_ascii(f, 4)
+            concentration = self.read_fixed_float32(f)
+            max_amount = self.read_fixed_float32(f)
+            self.infos.append(MixInfo(name, concentration, max_amount))
+
+    def print(self, depth=0):
+        if self.number_of_entries == 0:
+            self.print_with_indent("0", depth)
+            return
+        self.print_with_indent(f" - number_of_entries: {self.number_of_entries}", depth)
+
+        for info in self.infos :
+            self.print_with_indent(f" - solution_info: name {info.name},concentration {info.concentration}, max_amount {info.max_amount}", depth)
+
+    def write(self, f: BinaryIO):
+        if self.number_of_entries == 0:
+            self.write_int(f, 0)
+            return
+        self.write_int(f, self.number_of_entries)
+
+        for info in self.infos:
+            self.write_ascii(f, info.name)
+            self.write_fixed_float32(f, info.concentration)
+            self.write_fixed_float32(f, info.max_amount)
+
+
+    def get_size(self) -> int:
+        if self.number_of_entries == 0:
+            return 4
+        return 4 +  self.number_of_entries * (4 + 4 + 4)
+
+
 class SampleDescription(Mp4Component):
     def __init__(self, sample_description_size: int = None, data_format: str = "", reserved1: bytes = bytes(6),
-                 data_reference_index: int = 0, rest: bytes = b''):
+                 data_reference_index: int = 0, rest: bytes = b'', mix_info : RawMixCodec | None = None):
         super().__init__()
         self.sample_description_size: int = sample_description_size
         self.data_format: str = data_format
         self.reserved1: bytes = reserved1
         self.data_reference_index: int = data_reference_index
+        self.mix_info : RawMixCodec | None = mix_info
         self.rest: bytes = rest
 
     def parse(self, f: BinaryIO):
@@ -639,9 +693,16 @@ class SampleDescription(Mp4Component):
         if self.sample_description_size == 0:
             return self
         self.data_format = self.read_ascii(f, 4)
+
+
         self.reserved1 = f.read(6)
         self.data_reference_index = self.read_int(f, 2)
-        self.rest = f.read(self.sample_description_size - (f.tell() - begin))
+
+        if self.data_format == "rmix":
+            self.mix_info = RawMixCodec()
+            self.mix_info.parse(f)
+        else:
+            self.rest = f.read(self.sample_description_size - (f.tell() - begin))
         return self
 
     def print(self, depth=0):
@@ -653,6 +714,9 @@ class SampleDescription(Mp4Component):
         self.print_with_indent(f" - reserved1: {self.reserved1.hex()}", depth)
         self.print_with_indent(f" - data_reference_index: {self.data_reference_index}", depth)
         self.print_with_indent(f" - rest: {self.rest.hex()} \n", depth)
+        if self.mix_info is not None:
+            self.mix_info.print(depth)
+
 
     def write(self, f: BinaryIO):
         if self.sample_description_size == 0:
@@ -664,12 +728,17 @@ class SampleDescription(Mp4Component):
         self.write_ascii(f, self.data_format)
         f.write(self.reserved1)
         self.write_int(f, self.data_reference_index, length=2)
-        f.write(self.rest)
+
+        if self.data_format == "rmix":
+            self.mix_info.write(f)
+        else:
+            f.write(self.rest)
 
     def get_size(self) -> int:
         if self.sample_description_size == 0:
             return 4
-        return 4 + 4 + 6 + 2 + len(self.rest)
+        body_len =  self.mix_info.get_size() if self.data_format == "rmix" else len(self.rest)
+        return 4 + 4 + 6 + 2 + body_len
 
 
 class SttsBox(LeafBox):

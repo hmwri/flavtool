@@ -1,12 +1,15 @@
 from flavtool.analyzer.media_data import ChunkData
 from flavtool.parser.boxs.container import ContainerBox
 from flavtool.parser.boxs.leaf import *
+from flavtool.codec.codec_options import CodecOption, MixCodecOption
+
 
 class SampleTableCreator:
     """
     サンプルテーブルを作るクラス
     """
-    def __init__(self, chunks: list[ChunkData], codec:str):
+
+    def __init__(self, chunks: list[ChunkData], codec: str, codec_option: CodecOption=None):
         """
         サンプルテーブルを作るクラス
 
@@ -17,8 +20,13 @@ class SampleTableCreator:
         codec : str
             コーデック
         """
+
+
         self.chunks = chunks
         self.codec = codec
+        self.codec_option = codec_option
+        if self.codec_option is not None and codec_option.corresponding_codec != codec:
+            Exception("invalid codec option")
 
     def __make_sample_to_chunk_table(self) -> list[SampleToChunk]:
         """
@@ -54,7 +62,7 @@ class SampleTableCreator:
                 if not first:
                     size = len(s.data)
                     if size != sizes[-1]:
-                        all_same =False
+                        all_same = False
                         break
                     sizes.append(size)
                 first = False
@@ -64,10 +72,9 @@ class SampleTableCreator:
         else:
             return 0, sizes
 
-
     def __make_time_to_sample_table(self) -> list[TimeToSample]:
         deltas = [self.chunks[0][0].delta]
-        table : list[TimeToSample] = [
+        table: list[TimeToSample] = [
             TimeToSample(1, deltas[0])
         ]
         first = True
@@ -75,7 +82,7 @@ class SampleTableCreator:
             for s in c.samples:
                 if not first:
                     delta = s.delta
-                    if delta != table[-1].sample_delta :
+                    if delta != table[-1].sample_delta:
                         table.append(TimeToSample(1, delta))
                     else:
                         table[-1].sample_count += 1
@@ -83,12 +90,28 @@ class SampleTableCreator:
                 first = False
         return table
 
+    def __make_sample_description_table(self) -> StsdBox:
+        option = None
+        if self.codec == "rmix":
+            self.codec_option :MixCodecOption = self.codec_option
+            option = RawMixCodec(
+                number_of_entries=len(self.codec_option.infos),
+                mix_info=self.codec_option.infos
+            )
 
+        return StsdBox(
+            box_type="stsd",
+            number_of_entries=1,
+            sample_description_table=[
+                SampleDescription(
+                    sample_description_size=None,
+                    data_format=self.codec,
+                    data_reference_index=1,
+                    mix_info=option
 
-
-
-
-
+                )
+            ],
+        )
 
     def make_sample_table(self) -> ContainerBox:
         """
@@ -106,17 +129,7 @@ class SampleTableCreator:
         sample_table = ContainerBox(
             box_type="stbl",
             children=[
-                StsdBox(
-                    box_type="stsd",
-                    number_of_entries=1,
-                    sample_description_table=[
-                        SampleDescription(
-                            sample_description_size=None,
-                            data_format=self.codec,
-                            data_reference_index=1
-                        )
-                    ],
-                ),
+                self.__make_sample_description_table(),
                 SttsBox(
                     box_type="stts",
                     number_of_entries=len(time_to_sample),
@@ -140,4 +153,3 @@ class SampleTableCreator:
             ]
         )
         return sample_table
-

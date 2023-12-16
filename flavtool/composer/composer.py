@@ -43,8 +43,6 @@ class Composer:
         self.flav_mp4 : FlavMP4 = flav_mp4
 
 
-
-
     def __generate_interleave_chunks(self, criteria_media_type: media_types, target_media_types: list[media_types]) -> \
             tuple[list[ChunkData], dict[media_types, list[int]]]:
         """

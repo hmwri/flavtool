@@ -10,9 +10,15 @@ def raw5_encoder(data: np.ndarray) -> bytes:
         raise Exception("Encode Error. Only ndarray (5,1) is supported")
     return data.tobytes()
 
+def rmix_encoder(data: np.ndarray) -> bytes:
+    if data.dtype != np.uint16:
+        raise Exception("Encode Error. Only ndarray dtype=np.uint16 is supported")
+    return data.tobytes()
+
 
 encoder_func_type = Callable[[np.ndarray], bytes]
 
 encoders: Final[dict[str, encoder_func_type]] = {
-    "raw5": raw5_encoder
+    "raw5": raw5_encoder,
+    "rmix": rmix_encoder
 }
