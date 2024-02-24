@@ -15,6 +15,7 @@ flavtool/analyzer/media_data/chunk.py
 flavtool/analyzer/media_data/media_data.py
 flavtool/analyzer/media_data/sample.py
 flavtool/codec/__init__.py
+flavtool/codec/codec_options.py
 flavtool/codec/decoder.py
 flavtool/codec/encoder.py
 flavtool/composer/__init__.py

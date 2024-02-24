@@ -33,7 +33,7 @@ class CodecOption:
 class MixCodecOption(CodecOption):
     def __init__(self, infos:list[MixInfo]):
         super().__init__(corresponding_codec="rmix")
-        self.infos = infos
+        self.infos : list[MixInfo] = infos
 
     @staticmethod
     def default():

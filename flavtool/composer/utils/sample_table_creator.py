@@ -63,7 +63,6 @@ class SampleTableCreator:
                     size = len(s.data)
                     if size != sizes[-1]:
                         all_same = False
-                        break
                     sizes.append(size)
                 first = False
 

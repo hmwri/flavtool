@@ -486,7 +486,7 @@ class TmhdBox(LeafBox):
         return self
 
     def print(self, depth=0):
-        self.print_with_indent("smhd", depth)
+        self.print_with_indent("tmhd", depth)
         depth += 1  # Increase the depth for nested printing
         self.print_with_indent(f" - version: {self.version.hex()}", depth)
         self.print_with_indent(f" - flags: {self.flags.hex()}", depth)
@@ -494,7 +494,7 @@ class TmhdBox(LeafBox):
         self.print_with_indent(f" - reserved: {self.reserved}", depth)
 
     def write(self, f: BinaryIO):
-        self.write_type_and_size(f, "smhd", self.get_size())
+        self.write_type_and_size(f, "tmhd", self.get_size())
         f.write(self.version)
         f.write(self.flags)
         self.write_int(f, self.balance, 2)
@@ -624,11 +624,11 @@ class StsdBox(LeafBox):
         return self.get_overall_size(1 + 3 + 4 + table_all_size)
 
 
-class SolutionInfo():
-    def __init__(self, name, concentration : float, max_amount):
-        self.name :str = name
-        self.concentration : float = concentration
-        self.max_amount : float = max_amount
+# class SolutionInfo():
+#     def __init__(self, name, concentration : float, max_amount):
+#         self.name :str = name
+#         self.concentration : float = concentration
+#         self.max_amount : float = max_amount
 
 class RawMixCodec(Mp4Component):
     def __init__(self, number_of_entries: int = 0, mix_info : list[MixInfo] = None):

@@ -1,6 +1,7 @@
 from typing import Callable, Final
 
 import numpy as np
+import zlib
 
 
 def raw5_encoder(data: np.ndarray) -> bytes:
@@ -10,10 +11,11 @@ def raw5_encoder(data: np.ndarray) -> bytes:
         raise Exception("Encode Error. Only ndarray (5,1) is supported")
     return data.tobytes()
 
+
 def rmix_encoder(data: np.ndarray) -> bytes:
-    if data.dtype != np.uint16:
-        raise Exception("Encode Error. Only ndarray dtype=np.uint16 is supported")
-    return data.tobytes()
+    if data.dtype != np.uint8:
+        raise Exception("Encode Error. Only ndarray dtype=np.uint8 is supported")
+    return zlib.compress(data.tobytes())
 
 
 encoder_func_type = Callable[[np.ndarray], bytes]
