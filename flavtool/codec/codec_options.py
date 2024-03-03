@@ -46,6 +46,18 @@ class MixCodecOption(CodecOption):
                 MixInfo(name="Glut", concentration=9, max_amount=100),
             ]
         )
+    @staticmethod
+    def generate(names:list[str], concentrations:list[int] | int, max_amounts:list[int] | int):
+
+        return MixCodecOption(
+            [
+                MixInfo(name=name,
+                        concentration= concentrations[i] if isinstance(concentrations, list) else concentrations,
+                        max_amount= max_amounts[i] if isinstance(max_amounts, list) else max_amounts
+                        )
+                for i, name in enumerate(names)
+            ]
+        )
 
     def __str__(self):
         result = "codec_option\n"

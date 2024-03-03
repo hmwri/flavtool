@@ -8,7 +8,6 @@ def raw5_decoder(code: bytes) -> np.ndarray :
     return np.frombuffer(code, dtype=np.uint8)
 
 def rmix_decoder(code: bytes) -> np.ndarray:
-    print("decode" ,list(code))
     return np.frombuffer(zlib.decompress(code), dtype=np.uint8)
 
 decoder_func_type = Callable[[bytes], np.ndarray]
