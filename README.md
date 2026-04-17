@@ -102,6 +102,59 @@ decoded = decoder(encoded)
 
 `raw5` は 5 次元の `uint8` 味データをそのまま bytes にします。`rmix` は zlib 圧縮を使う codec です。
 
+### 味 codec
+
+`flavtool.codec` は、FlavMP4 の taste / scent track に保存するサンプルデータを bytes へ変換する層です。現在の実装では `raw5` と `rmix` をサポートしています。
+
+| codec | 内容 | encode | decode | sample description |
+| --- | --- | --- | --- | --- |
+| `raw5` | 5 次元の `uint8` 味ベクトルをそのまま保存 | `data.tobytes()` | `np.frombuffer(..., dtype=np.uint8)` | 追加 option なし |
+| `rmix` | 複数の味物質の混合比を保存 | `zlib.compress(data.tobytes())` | `zlib.decompress(...)` 後に `np.frombuffer` | `MixCodecOption` の混合情報を `stsd` に記録 |
+
+#### raw5
+
+`raw5` は、長さ 5 の `uint8` 配列だけを受け取ります。基本五味など、固定 5 次元の味ベクトルを簡単に保存したい場合に使います。
+
+```python
+import numpy as np
+from flavtool.codec import get_encoder, get_decoder
+
+taste = np.array([10, 20, 30, 40, 50], dtype=np.uint8)
+
+encoder = get_encoder("raw5")
+decoder = get_decoder("raw5")
+
+encoded = encoder(taste)
+decoded = decoder(encoded)
+```
+
+#### rmix
+
+`rmix` は、任意長の `uint8` 配列を zlib 圧縮して保存します。どの味物質をどの濃度・最大量で扱うかは `MixCodecOption` に記録します。
+
+```python
+import numpy as np
+from flavtool.codec import get_encoder, get_decoder
+from flavtool.codec.codec_options import MixCodecOption
+
+codec_option = MixCodecOption.generate(
+    names=["NaCl", "CitA", "Fruc", "Pota", "Glut"],
+    concentrations=[17, 17, 30, 20, 9],
+    max_amounts=100,
+)
+
+mix = np.array([20, 5, 80, 10, 30], dtype=np.uint8)
+
+encoder = get_encoder("rmix")
+decoder = get_decoder("rmix")
+
+encoded = encoder(mix)
+decoded = decoder(encoded)
+print(codec_option)
+```
+
+`MixCodecOption.default()` では、`NaCl`, `CitA`, `Fruc`, `Pota`, `Glut` の 5 種がデフォルトで使われます。
+
 ### composer で再構成する
 
 `Composer` は `FlavMP4` の track と media data をもとに `mdat` と sample table の offset を再構成し、ファイルへ書き出します。
@@ -229,6 +282,59 @@ decoded = decoder(encoded)
 ```
 
 `raw5` stores a 5-dimensional `uint8` taste vector directly as bytes. `rmix` uses zlib compression.
+
+### Taste Codecs
+
+`flavtool.codec` converts sample data for FlavMP4 taste/scent tracks into bytes. The current implementation supports `raw5` and `rmix`.
+
+| codec | Meaning | encode | decode | sample description |
+| --- | --- | --- | --- | --- |
+| `raw5` | store a 5-dimensional `uint8` taste vector directly | `data.tobytes()` | `np.frombuffer(..., dtype=np.uint8)` | no extra option |
+| `rmix` | store a mixture ratio for multiple taste substances | `zlib.compress(data.tobytes())` | `zlib.decompress(...)` then `np.frombuffer` | stores `MixCodecOption` metadata in `stsd` |
+
+#### raw5
+
+`raw5` accepts only a length-5 `uint8` array. Use it when a fixed five-dimensional taste vector is enough.
+
+```python
+import numpy as np
+from flavtool.codec import get_encoder, get_decoder
+
+taste = np.array([10, 20, 30, 40, 50], dtype=np.uint8)
+
+encoder = get_encoder("raw5")
+decoder = get_decoder("raw5")
+
+encoded = encoder(taste)
+decoded = decoder(encoded)
+```
+
+#### rmix
+
+`rmix` stores an arbitrary-length `uint8` array with zlib compression. The mixture substances, concentrations, and maximum amounts are described by `MixCodecOption`.
+
+```python
+import numpy as np
+from flavtool.codec import get_encoder, get_decoder
+from flavtool.codec.codec_options import MixCodecOption
+
+codec_option = MixCodecOption.generate(
+    names=["NaCl", "CitA", "Fruc", "Pota", "Glut"],
+    concentrations=[17, 17, 30, 20, 9],
+    max_amounts=100,
+)
+
+mix = np.array([20, 5, 80, 10, 30], dtype=np.uint8)
+
+encoder = get_encoder("rmix")
+decoder = get_decoder("rmix")
+
+encoded = encoder(mix)
+decoded = decoder(encoded)
+print(codec_option)
+```
+
+`MixCodecOption.default()` uses `NaCl`, `CitA`, `Fruc`, `Pota`, and `Glut`.
 
 ### Compose an MP4
 
