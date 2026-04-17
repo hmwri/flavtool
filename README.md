@@ -1,97 +1,142 @@
 # flavtool
 
-flavtoolは、味覚情報を埋め込み可能なファイル形式:FlavMP4の解析、
-編集を可能にするpythonツールキットです。
+## 日本語
 
-## インストール方法
+`flavtool` は、味覚情報を記録できる FlavMP4 を解析・編集・再構成するための低レベル Python ツールキットです。MP4 の box 構造を読み、トラック情報を整理し、味データを encode/decode し、必要に応じて MP4 を再合成します。
 
-```shell
+TasteColorizer のように、既存の映像メディアへ推定された味データを付与する用途の基盤になります。
+
+参考: https://www.honma.site/ja/works/TasteColorizer/
+
+### インストール
+
+```bash
 pip install flavtool
 ```
 
+ローカルで開発する場合:
 
-## 使用方法
-ツールキットは、parser, analyzer,codec,composerに分けられます。
+```bash
+pip install -e .
+```
 
-### parser
-MP4ファイルを構文解析します。
+### 主なモジュール
+
+- `parser`: MP4 box 構造の解析
+- `analyzer`: 解析結果からトラックやメディア情報を整理
+- `codec`: 味データの encode/decode
+- `composer`: 解析・編集した情報から MP4 を再構成
+
+### MP4 を解析する
 
 ```python
 from flavtool.parser import Parser
 
-p = Parser("pathmp4")
-
-box = p.parse()
-
-box = p.parse()
-#メディアデータをメモリに読み込まないようにするには、read_mdat_bytes=falseとしてください
-box = p.parse(read_mdat_bytes=False)
-
-# boxには構文解析されたBoxの集合が入ります
+parser = Parser("path/to/file.mp4")
+box = parser.parse(read_mdat_bytes=False)
 box.print()
 ```
 
-### analyzer
-パースされた情報を元に、トラック情報、メディア情報などを整理します。
+`read_mdat_bytes=False` にすると、メディア本体をメモリに読み込まずに構造を確認できます。
+
+### トラックを解析する
 
 ```python
-from flavtool.parser import Parser
 from flavtool.analyzer import analyze
+from flavtool.parser import Parser
 
-p = Parser("pathmp4")
-box = p.parse(read_mdat_bytes=False)
-
-#解析
+parser = Parser("path/to/file.mp4")
+box = parser.parse(read_mdat_bytes=False)
 flav_mp4 = analyze(box)
 
-#味のトラック情報を取得
 taste_track = flav_mp4.tracks["tast"]
-#味のデータを取得(Chunk, Sample構造を取っています)
-taste_media_data = flav_mp4.tracks["tast"]
 ```
 
-### codec
-味データのデコード/エンコードを行います
+### 味データを encode/decode する
+
 ```python
-from flavtool.codec import get_decoder, get_encoder
 import numpy as np
+from flavtool.codec import get_decoder, get_encoder
 
+taste = np.array([1, 2, 3, 4, 5], dtype=np.uint8)
 
-taste = np.array([1,2,3,4,5], dtype=np.uint8)
-
-#非圧縮5次元味データのエンコーダを取得する
 encoder = get_encoder("raw5")
+encoded = encoder(taste)
 
-#エンコード (5次元 uin8 ndarray -> bytes)
-byte_data = encoder(taste)
-
-#デコード (bytes -> 5次元 ndarray uint8)
 decoder = get_decoder("raw5")
-taste_data = decoder(byte_data)
-
+decoded = decoder(encoded)
 ```
 
-### composer
-与えられたFlavMP4構造体の情報を元にMP4データを再合成します
+### 構成
+
+- `flavtool/parser/`: MP4 parser
+- `flavtool/analyzer/`: track/media analyzer
+- `flavtool/codec/`: taste codec
+- `flavtool/composer/`: MP4 composer
+- `main.py`, `vit_test.py`: ローカル実験用コード
+- `*.mp4`: サンプルまたは生成されたメディアファイル
+
+## English
+
+`flavtool` is a low-level Python toolkit for parsing, analyzing, editing, encoding, and composing FlavMP4 files.
+
+It is the lower layer used when applications need direct access to MP4 structures, taste tracks, codecs, and composition.
+
+Reference: https://www.honma.site/ja/works/TasteColorizer/
+
+### Install
+
+```bash
+pip install flavtool
+```
+
+For local development:
+
+```bash
+pip install -e .
+```
+
+### Modules
+
+- `parser`: parse MP4 box structures
+- `analyzer`: organize parsed boxes into tracks and media information
+- `codec`: encode/decode taste data
+- `composer`: rebuild MP4 data
+
+### Parse an MP4
 
 ```python
 from flavtool.parser import Parser
-from flavtool.analyzer import analyze
 
-##サンプルコード準備中
-p = Parser("pathmp4")
-box = p.parse(read_mdat_bytes=False)
-
-#解析
-flav_mp4 = analyze(box)
-
-#味のトラック情報を取得
-taste_track = flav_mp4.tracks["tast"]
-#味のデータを取得(Chunk, Sample構造を取っています)
-taste_media_data = flav_mp4.tracks["tast"]
-
+parser = Parser("path/to/file.mp4")
+box = parser.parse(read_mdat_bytes=False)
+box.print()
 ```
 
+### Analyze Tracks
 
+```python
+from flavtool.analyzer import analyze
+from flavtool.parser import Parser
 
+parser = Parser("path/to/file.mp4")
+box = parser.parse(read_mdat_bytes=False)
+flav_mp4 = analyze(box)
 
+taste_track = flav_mp4.tracks["tast"]
+```
+
+### Encode and Decode Taste Data
+
+```python
+import numpy as np
+from flavtool.codec import get_decoder, get_encoder
+
+taste = np.array([1, 2, 3, 4, 5], dtype=np.uint8)
+
+encoder = get_encoder("raw5")
+encoded = encoder(taste)
+
+decoder = get_decoder("raw5")
+decoded = decoder(encoded)
+```
